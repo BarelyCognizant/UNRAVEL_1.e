@@ -45,22 +45,22 @@ class Player:
     # operators are "+", "-", "="
     # names must be unique
 
-    # TODO: save to JSON (should be easy)
-    # load from JSON (less easy)
-
     # in format {name:(type, value)}
     data = {}
 
-    def __init__(self, data=None):
+    def __init__(self, data=None, name=None):
         if data is None:
             self.data = {}
-            self.change_attribute(operation="add", name="Name", value=None, attr_type="string")
+            self.change_attribute(operation="add", name="Name", value=name, attr_type="string")
             self.change_attribute(operation="add", name="HP", value=None, attr_type="int")
             self.change_attribute(operation="add", name="Skills", value=None, attr_type="{string:int}")
             self.change_attribute(operation="add", name="Inventory", value=None, attr_type="{string:int}")
             self.change_attribute(operation="add", name="Achievements", value=None, attr_type="[string]")
         else:
             self.data = data
+
+    def name(self):
+        return self.data.Name
 
     def save_file(self, filepath):
         with open(filepath, 'w') as fp:

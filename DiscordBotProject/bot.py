@@ -38,11 +38,10 @@ async def test(ctx):
     await ctx.send("test")
 
 
-@bot.command(name="create_player", help="Create an Empty Player")
+@bot.command(name="create_player", help="Create an Empty Player with name Name")
 @commands.has_role("bot_tester")
-async def test(ctx):
-    csh.Player.generateBasePlayer()
-    await ctx.send("Player Created")
+async def add_new_player(ctx, name):
+    await ctx.send(csh.add_new_player(name))
 
 
 @bot.command(name="view_player", help="view a given player's character sheet")
