@@ -1,3 +1,5 @@
 
 DiscordBotProject/.env
 *.xml
+*.pyc
+DiscordBotProject/__pycache__/bot.cpython-310.pyc
