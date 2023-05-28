@@ -5,9 +5,13 @@ import utils
 import sys
 from pygame.locals import *
 import math
+import requests
+import ast
+
 
 from tile import Tile
 
+ipAddress = "192.168.1.22:8000"
 mapName = sys.argv[1]
 currentMapHash = ""
 
@@ -44,6 +48,9 @@ pygame.init()
 FPS = 60
 FramePerSec = pygame.time.Clock()
 
+CHECKHASHEVENT, t = pygame.USEREVENT+1, 10000
+pygame.time.set_timer(CHECKHASHEVENT, t)
+
 
 class Button:
     def __init__(self, bounds, onClick):
@@ -74,11 +81,24 @@ camera = {"scale": scale,
 drag = False
 lastMousePos = (0, 0)
 lastMouseDownPos = (0, 0)
+currentSelectionIndex = 0
 placementMode = False
 
 currentFocusTile = None
 
-Ms = [Tile((0, 0), "forest")]
+mapData = ast.literal_eval(requests.get("http://" + ipAddress + "/map/" + sys.argv[1]).text)
+
+currentMapHash = mapData["hash"]
+Ms = []
+for tile in mapData["tiles"]:
+    toAppend = Tile(mapData["tiles"][tile]["location"], mapData["tiles"][tile]["type"], tile)
+    neighbours = utils.find_tiles(utils.generate_neighbour_locs(mapData["tiles"][tile]["location"]), Ms)
+    toAppend.neighbours = neighbours
+    for n in neighbours:
+        if n is not None:
+            n.add_neighbour(toAppend)
+    Ms.append(toAppend)
+
 center(Ms, camera)
 
 
@@ -95,12 +115,18 @@ while True:
                 drag = True
                 lastMousePos = event.pos
                 lastMouseDownPos = event.pos
-            # elif event.button == 4:
+            elif event.button == 4:
+                currentSelectionIndex -= 1
+                if currentSelectionIndex < 0:
+                    currentSelectionIndex = len(utils.tiles) - 1
             #    camera["scale"] += 15
             #    m_x, m_y = event.pos
             #    camera["ox"] -= ((m_x / screensize[0]) - 0.5) * 15
             #    camera["oy"] -= ((m_y / screensize[1]) - 0.5) * 15
-            # elif event.button == 5:
+            elif event.button == 5:
+                currentSelectionIndex += 1
+                if currentSelectionIndex >= len(utils.tiles):
+                    currentSelectionIndex = 0
             #    camera["scale"] -= 15
             #    m_x, m_y = event.pos
             #    camera["ox"] += ((m_x / screensize[0]) - 0.5) * 15
@@ -124,6 +150,19 @@ while True:
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_p:
                 placementMode = not placementMode
+        elif event.type == CHECKHASHEVENT:
+            mapData = ast.literal_eval(requests.get("http://" + ipAddress + "/map/" + sys.argv[1]).text)
+            if currentMapHash != mapData["hash"]:
+                currentMapHash = mapData["hash"]
+                Ms = []
+                for tile in mapData["tiles"]:
+                    toAppend = Tile(mapData["tiles"][tile]["location"], mapData["tiles"][tile]["type"], tile)
+                    neighbours = utils.find_tiles(utils.generate_neighbour_locs(mapData["tiles"][tile]["location"]), Ms)
+                    toAppend.neighbours = neighbours
+                    for n in neighbours:
+                        if n is not None:
+                            n.add_neighbour(toAppend)
+                    Ms.append(toAppend)
 
     DISPLAY_SURF.fill(utils.colors["background"])
     BsBoxes = []
@@ -214,10 +253,35 @@ while True:
         if hoverPoint is not None:
             toAppend = None
             if leftClick:
-                toAppend = Tile(hoverPoint, "desert", unique_id=len(Ms))
-            if rightClick:
-                toAppend = Tile(hoverPoint, "forest", unique_id=len(Ms))
-            if leftClick or rightClick:
+                toAppend = Tile(hoverPoint, utils.tiles[currentSelectionIndex], unique_id=len(Ms))
+                mapData = ast.literal_eval(requests.post("http://" + ipAddress +
+                                                         "/map/" + sys.argv[1] +
+                                                         "/tile/" + str(toAppend.loc[0]) +
+                                                         "/" + str(toAppend.loc[1]) +
+                                                         "/" + toAppend.type +
+                                                         "/" + str(toAppend.id) +
+                                                         "/" + currentMapHash).text)
+                if "message" in mapData:
+                    mapData = ast.literal_eval(requests.get("http://" + ipAddress + "/map/" + sys.argv[1]).text)
+                    currentMapHash = mapData["hash"]
+                    Ms = []
+                    for tile in mapData["tiles"]:
+                        toAppend = Tile(mapData["tiles"][tile]["location"], mapData["tiles"][tile]["type"], tile)
+                        neighbours = utils.find_tiles(
+                            utils.generate_neighbour_locs(mapData["tiles"][tile]["location"]), Ms)
+                        toAppend.neighbours = neighbours
+                        for n in neighbours:
+                            if n is not None:
+                                n.add_neighbour(toAppend)
+                        Ms.append(toAppend)
+                    mapData = ast.literal_eval(requests.post("http://" + ipAddress +
+                                                             "/map/" + sys.argv[1] +
+                                                             "/tile/" + str(toAppend.loc[0]) +
+                                                             "/" + str(toAppend.loc[1]) +
+                                                             "/" + toAppend.type +
+                                                             "/" + str(toAppend.id) +
+                                                             "/" + currentMapHash).text)
+                currentMapHash = mapData["hash"]
                 neighbours = utils.find_tiles(utils.generate_neighbour_locs(hoverPoint), Ms)
                 toAppend.neighbours = neighbours
                 for n in neighbours:
@@ -268,6 +332,13 @@ while True:
         utils.addAlphaRect(DISPLAY_SURF, 0, 0, barWidth + 40, screensize[1], (40, 40, 40), 160)
         for i in range(len(text)):
             utils.addText(DISPLAY_SURF, text[i], 20, 20 + (i * fontHeight), infoFont, (255, 255, 255))
+
+    if placementMode:
+        utils.addAlphaRect(DISPLAY_SURF, screensize[0] - 550, screensize[1] - 140, 550, 140, (40, 40, 40), 160)
+        w = controlFont.size(utils.tiles[currentSelectionIndex])[0]
+        pygame.draw.polygon(DISPLAY_SURF, utils.colors[utils.tiles[currentSelectionIndex]][0], utils.getHexagon(screensize[0] - 70, screensize[1] - 70, camera["scale"]))
+        utils.addText(DISPLAY_SURF, utils.tiles[currentSelectionIndex], screensize[0] - 140 - w, screensize[1] - 100, controlFont,
+                      (255, 255, 255))
 
     pygame.display.update()
 

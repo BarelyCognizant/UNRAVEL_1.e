@@ -5,6 +5,8 @@ colors = {"desert": [(201, 173, 71), (232, 212, 139)],
           "mesa": [(148, 62, 44), (191, 98, 78)],
           "background": (53, 54, 58)}
 
+tiles = ["forest", "desert", "mesa"]
+
 
 def getHexagon(x, y, w):
     points = [
