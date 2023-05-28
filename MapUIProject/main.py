@@ -261,33 +261,39 @@ while True:
                                                          "/" + toAppend.type +
                                                          "/" + str(toAppend.id) +
                                                          "/" + currentMapHash).text)
-                if "message" in mapData:
-                    mapData = ast.literal_eval(requests.get("http://" + ipAddress + "/map/" + sys.argv[1]).text)
-                    currentMapHash = mapData["hash"]
-                    Ms = []
-                    for tile in mapData["tiles"]:
-                        toAppend = Tile(mapData["tiles"][tile]["location"], mapData["tiles"][tile]["type"], tile)
-                        neighbours = utils.find_tiles(
-                            utils.generate_neighbour_locs(mapData["tiles"][tile]["location"]), Ms)
+                print(mapData)
+                if "message" in mapData and mapData["message"] == "This tile already exists.":
+                    print("tile already there")
+                else:
+                    if "message" in mapData:
+                        mapData = ast.literal_eval(requests.get("http://" + ipAddress + "/map/" + sys.argv[1]).text)
+                        currentMapHash = mapData["hash"]
+                        Ms = []
+                        for tile in mapData["tiles"]:
+                            toAppend = Tile(mapData["tiles"][tile]["location"], mapData["tiles"][tile]["type"], tile)
+                            neighbours = utils.find_tiles(
+                                utils.generate_neighbour_locs(mapData["tiles"][tile]["location"]), Ms)
+                            toAppend.neighbours = neighbours
+                            for n in neighbours:
+                                if n is not None:
+                                    n.add_neighbour(toAppend)
+                            Ms.append(toAppend)
+                        mapData = ast.literal_eval(requests.post("http://" + ipAddress +
+                                                                 "/map/" + sys.argv[1] +
+                                                                 "/tile/" + str(toAppend.loc[0]) +
+                                                                 "/" + str(toAppend.loc[1]) +
+                                                                 "/" + toAppend.type +
+                                                                 "/" + str(toAppend.id) +
+                                                                 "/" + currentMapHash).text)
+
+                    if "message" not in mapData:
+                        currentMapHash = mapData["hash"]
+                        neighbours = utils.find_tiles(utils.generate_neighbour_locs(hoverPoint), Ms)
                         toAppend.neighbours = neighbours
                         for n in neighbours:
                             if n is not None:
                                 n.add_neighbour(toAppend)
                         Ms.append(toAppend)
-                    mapData = ast.literal_eval(requests.post("http://" + ipAddress +
-                                                             "/map/" + sys.argv[1] +
-                                                             "/tile/" + str(toAppend.loc[0]) +
-                                                             "/" + str(toAppend.loc[1]) +
-                                                             "/" + toAppend.type +
-                                                             "/" + str(toAppend.id) +
-                                                             "/" + currentMapHash).text)
-                currentMapHash = mapData["hash"]
-                neighbours = utils.find_tiles(utils.generate_neighbour_locs(hoverPoint), Ms)
-                toAppend.neighbours = neighbours
-                for n in neighbours:
-                    if n is not None:
-                        n.add_neighbour(toAppend)
-                Ms.append(toAppend)
 
     else:
         if leftClick:

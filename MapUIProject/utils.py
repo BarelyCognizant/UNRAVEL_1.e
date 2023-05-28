@@ -19,7 +19,6 @@ def getHexagon(x, y, w):
     ]
     return points
 
-
 def drawCell(surface, camera, x, y, color):
     if (y % 2) == 0:
         x = x + 0.5

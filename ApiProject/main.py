@@ -49,6 +49,9 @@ async def create_map_object(mapName: str, x: int, y:int, type: str, id: int, has
         with open("maps/" + mapName + ".json") as mapJsonFile:
             mapData = json.load(mapJsonFile)
         if mapData["hash"] == hash:
+            for tile in mapData["tiles"]:
+                if mapData["tiles"][tile]["location"][0] == x and mapData["tiles"][tile]["location"][1] == y:
+                    return {"message": "This tile already exists."}
             mapData["hash"] = str(uuid.uuid4())
             mapData["tiles"][id] = {"location": [x, y], "type": type}
             os.remove("maps/" + mapName + ".json")
