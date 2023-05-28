@@ -5,6 +5,8 @@ import discord
 from dotenv import load_dotenv
 from discord.ext import commands
 
+import character_sheet_handler as csh
+
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILD')
@@ -34,6 +36,24 @@ async def on_command_error(ctx, error):
 @commands.has_role("bot_tester")
 async def test(ctx):
     await ctx.send("test")
+
+
+@bot.command(name="create_player", help="Create an Empty Player")
+@commands.has_role("bot_tester")
+async def test(ctx):
+    csh.Player.generateBasePlayer()
+    await ctx.send("Player Created")
+
+
+@bot.command(name="view_player", help="view a given player's character sheet")
+@commands.has_role("bot_tester")
+async def test(ctx):
+    csh.Player.generateBasePlayer()
+    await ctx.send("Player Created")
+
+
+
+
 
 
 def start_bot():

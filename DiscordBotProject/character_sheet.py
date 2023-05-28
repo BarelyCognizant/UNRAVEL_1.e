@@ -2,27 +2,28 @@ import re
 import json
 
 
-def strToList(value):
+# Utils
+def str_to_list(value):
     return list(map(lambda x: x[1:-1], re.findall("\".*?\"", value)))
 
 
-def strToDict(value):
+def str_to_dict(value):
     value = re.sub("\s", "", value)
     values = re.findall("\".*?\"\s*\:\s*[0-9]+", value)
     ret = {}
     list(map(lambda x: ret.update({x[0]: x[1]}), map(lambda y: (
-    re.findall("(?<=\").*(?=\")", y)[0], int(re.findall("(?<=\:)[0-9]*", re.sub("\s", "", y))[0])), values)))
+        re.findall("(?<=\").*(?=\")", y)[0], int(re.findall("(?<=\:)[0-9]*", re.sub("\s", "", y))[0])), values)))
     return ret
 
 
-def dicToList(dictionary):
+def dic_to_list(dictionary):
     ret = []
     for v in dictionary:
         ret.append("{name} ({val})".format(name=v, val=dictionary[v]))
     return ret
 
 
-def foldString(string_list, cons):
+def fold_string(string_list, cons):
     if len(string_list) > 0:
         ret = string_list[0]
         for s in string_list[1:]:
@@ -30,6 +31,11 @@ def foldString(string_list, cons):
     else:
         ret = ""
     return ret
+
+
+def load_file(filepath):
+    with open(filepath) as json_file:
+        return json.load(json_file)
 
 
 class Player:
@@ -45,36 +51,23 @@ class Player:
     # in format {name:(type, value)}
     data = {}
 
-    def generateBasePlayer(self):
-        player = Player()
-        player.changeAttribute(operation="add", name="Name", value=None, attr_type="string")
-        player.changeAttribute(operation="add", name="HP", value=None, attr_type="int")
-        player.changeAttribute(operation="add", name="Skills", value=None, attr_type="{string:int}")
-        player.changeAttribute(operation="add", name="Inventory", value=None, attr_type="{string:int}")
-        player.changeAttribute(operation="add", name="Achievements", value=None, attr_type="[string]")
-        return player
+    def __init__(self, data=None):
+        if data is None:
+            self.data = {}
+            self.change_attribute(operation="add", name="Name", value=None, attr_type="string")
+            self.change_attribute(operation="add", name="HP", value=None, attr_type="int")
+            self.change_attribute(operation="add", name="Skills", value=None, attr_type="{string:int}")
+            self.change_attribute(operation="add", name="Inventory", value=None, attr_type="{string:int}")
+            self.change_attribute(operation="add", name="Achievements", value=None, attr_type="[string]")
+        else:
+            self.data = data
 
-    def loadFile(filepath):
-        player = Player()
-        with open(filepath) as json_file:
-            player.data = json.load(json_file)
-        return player
-
-    def __init__(self):
-        self.data = {}
-
-    def saveFile(self, filepath):
+    def save_file(self, filepath):
         with open(filepath, 'w') as fp:
             json.dump(self.data, fp)
 
-    def loadFile(filepath):
-        player = Player()
-        with open(filepath) as json_file:
-            player.data = json.load(json_file)
-        return player
-
-    def changeAttribute(self, *, operation=None, name=None, value=None, attr_type=None):
-        name = foldString(list(map(lambda a: a.capitalize(), re.split("\s", name))), "_")
+    def change_attribute(self, *, operation=None, name=None, value=None, attr_type=None):
+        name = fold_string(list(map(lambda a: a.capitalize(), re.split("\s", name))), "_")
         if operation == "add":
             if attr_type == None and value == None:
                 return "at least one of type or initial value must be specified"
@@ -87,11 +80,11 @@ class Player:
                     attr_type = "int"
                 else:
                     attr_type = "string"
-            return self.addAttribute(name, attr_type, value)
+            return self.add_attribute(name, attr_type, value)
         elif operation == "remove":
             return self.delAttribute(name)
 
-    def addAttribute(self, name, attr_type, value=None):
+    def add_attribute(self, name, attr_type, value=None):
         if name in self.data:
             return "cannot add attribute {name} because it already exists".format(name=name)
         elif value == None:
@@ -106,12 +99,12 @@ class Player:
         else:
             if attr_type == "[string]":
                 if re.search("\[\s*\".*\"\s*(\,\s*\".*\"\s*)*]", value):
-                    self.data.update({name: (attr_type, strToList(value))})
+                    self.data.update({name: (attr_type, str2list(value))})
                 else:
                     return "cannot convert {value} to type [string]".format(value=value)
             elif attr_type == "{string:int}":
                 if re.search("\{.+\:[0-9]+(\,\s*.+\:[0-9]+)*}", value):
-                    self.data.update({name: (attr_type, strToDict(value))})
+                    self.data.update({name: (attr_type, str2dict(value))})
                 else:
                     return "cannot convert {value} to type int".format(value=value)
             elif attr_type == "int":
@@ -135,7 +128,7 @@ class Player:
             return "deleted attribute {name}".format(name=name)
 
     # returns a string to be sent in response as a character sheet
-    def getPlayerDesc(self):
+    def get_player_desc(self):
         int_vals = ""
         str_vals = ""
         skills = ""
@@ -157,41 +150,41 @@ class Player:
                     str_vals = str_vals + "\n" + "{name}: {value}".format(name=k, value=self.data[k][1])
                 # handle data of type [string]
                 elif self.data[k][0] == "[string]":
-                    str_lists = str_lists + k + "\n  " + foldString(list(self.data[k][1]), "\n  ") + "\n"
+                    str_lists = str_lists + k + "\n  " + fold_string(list(self.data[k][1]), "\n  ") + "\n"
                 # handle data of type {string:int}
                 elif self.data[k][0] == "{string:int}":
                     dicts = dicts + "\n" + k + ":"
-                    dicts_list = dicToList(self.data[k][1])
+                    dicts_list = dic_to_list(self.data[k][1])
                     for s in dicts_list:
                         dicts = dicts + "\n  " + s
         int_vals = int_vals[1:]
 
         if "skills" in self.data:
             skills = "Skills:"
-            skills_list = dicToList(self.data["skills"][1])
+            skills_list = dic_to_list(self.data["skills"][1])
             for s in skills_list:
                 skills = skills + "\n  " + s
 
         if "inventory" in self.data:
             inventory = "Inventory:"
-            inventory_list = dicToList(self.data["inventory"][1])
+            inventory_list = dic_to_list(self.data["inventory"][1])
             for s in inventory_list:
                 inventory = inventory + "\n  " + s
 
         if "achievements" in self.data:
             achievements = "Achievements:\n  "
             if len(self.data["achievements"][1]) > 0:
-                achievements = achievements + foldString(self.data["achievements"][1], "\n  ") + "\n"
+                achievements = achievements + fold_string(self.data["achievements"][1], "\n  ") + "\n"
             # achievements = achievements[:-3]
-        ret = foldString(
+        ret = fold_string(
             list(filter(lambda x: x != "", [str_vals, int_vals, skills, inventory, achievements, str_lists, dicts])),
             "\n")
         ret = re.sub("(\n\s*){2,}", "\n", ret)
         return "```\n" + ret + "```"
 
     # returns a string, either confirming success, or an error message. to send as response to the triggering command
-    def changeData(self, name, operator, value="", key=""):
-        name = foldString(list(map(lambda a: a.capitalize(), re.split("\s", name))), "_")
+    def change_data(self, name, operator, value="", key=""):
+        name = fold_string(list(map(lambda a: a.capitalize(), re.split("\s", name))), "_")
         if name not in self.data:
             return "no such attribute in character sheet {name}".format(name=name)
         ret = ""
@@ -210,7 +203,7 @@ class Player:
             if value.isdigit():
                 value = int(value)
             else:
-                value = strToDict(value)
+                value = str2dict(value)
 
         # match type of specified target, and inputted type
         if cur_type == "string":
