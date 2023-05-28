@@ -1,0 +1,23 @@
+Unravel 0.3 Dice System
+
+
+Stats:
+
+Physical
+Mental
+Magical
+
+Skills:
+
+	Skill 1
+	
+
+If a player wants to do something requiring a SKILL check they simply type !roll skill
+which will generate some number of successes. the number of possible successes increases with the level of the SKILL
+
+The DM looks at the result and determins an appropriate DC
+
+They then check the appropriate STAT. if this is greater than the number of successes requried for the player to meet the DC, 
+the player succedes with DC - SKILL threats, otherwise they fail.
+
+threats are downsides which do not directly contradict the players aim, but hinder them in some way. These may include unexpected side effects or partial successes 
