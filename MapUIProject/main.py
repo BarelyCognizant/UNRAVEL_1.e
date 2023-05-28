@@ -8,6 +8,9 @@ import math
 
 from tile import Tile
 
+mapName = sys.argv[1]
+currentMapHash = ""
+
 
 iterations = 0
 user32 = ctypes.windll.user32
@@ -76,7 +79,6 @@ placementMode = False
 currentFocusTile = None
 
 Ms = [Tile((0, 0), "forest")]
-Ms[0].state = "good"
 center(Ms, camera)
 
 
@@ -213,15 +215,10 @@ while True:
             toAppend = None
             if leftClick:
                 toAppend = Tile(hoverPoint, "desert", unique_id=len(Ms))
-                neighbours = utils.find_bees(utils.generate_neighbour_locs(hoverPoint), Ms)
-                toAppend.neighbours = neighbours
-                for n in neighbours:
-                    if n is not None:
-                        n.add_neighbour(toAppend)
-                Ms.append(toAppend)
             if rightClick:
-                toAppend = Tile(hoverPoint, "mesa", unique_id=len(Ms))
-                neighbours = utils.find_bees(utils.generate_neighbour_locs(hoverPoint), Ms)
+                toAppend = Tile(hoverPoint, "forest", unique_id=len(Ms))
+            if leftClick or rightClick:
+                neighbours = utils.find_tiles(utils.generate_neighbour_locs(hoverPoint), Ms)
                 toAppend.neighbours = neighbours
                 for n in neighbours:
                     if n is not None:

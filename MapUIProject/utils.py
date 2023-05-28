@@ -59,7 +59,7 @@ def generate_neighbour_locs(loc):
         return [(x-1, y - 1), (x, y - 1), (x - 1, y), (x + 1, y), (x-1, y + 1), (x, y + 1)]
 
 
-def find_bees(locs, bs):
+def find_tiles(locs, bs):
     ret = []
     for b in bs:
         if b.loc in locs:
