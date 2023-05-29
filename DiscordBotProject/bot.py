@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from discord.ext import commands
 
 import character_sheet_handler as csh
+import server
+from dice import roll_dice
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -13,9 +15,14 @@ GUILD = os.getenv('DISCORD_GUILD')
 
 bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
 
+status_channel = None
+player_channels = []
+
 
 @bot.event
 async def on_ready():
+    global status_channel
+    global player_channels
     guild = discord.utils.get(bot.guilds, name=GUILD)
     print(
         f'{bot.user} is connected to the following guild:\n'
@@ -23,6 +30,15 @@ async def on_ready():
     )
     members = '\n - '.join([member.name for member in guild.members])
     print(f'Guild Members:\n - {members}')
+
+    status_channel = [channel for channel in guild.channels if channel.name == "server-status"][0]
+    player_rooms = discord.utils.get(guild.categories, id=1112766611963772989)
+    player_channels = player_rooms.text_channels
+
+    gremlin_role = discord.utils.get(guild.roles, id=1112687715750785075)
+    gremlins = [m.display_name for m in gremlin_role.members]
+    server.load_gremlins(gremlins)
+    server.load_messages()
 
 
 @bot.event
@@ -35,6 +51,9 @@ async def on_command_error(ctx, error):
 @commands.has_role("bot_tester")
 async def test(ctx):
     await ctx.send("test")
+
+
+# Character Sheet
 
 
 @bot.command(name="createPlayer", help="Create an Player with a given name \n name: name")
@@ -52,14 +71,54 @@ async def view_player(ctx, name):
         await ctx.send("No player exists with that name")
 
 
+# Login/Status
+
 @bot.command(name="login", help="Login as a gremlin to show your serving status as online")
 @commands.has_role("gremlin")
-async def login_gremlin(ctx, name):
-    guild = discord.utils.get(bot.guilds, name=GUILD)
-    role = discord.utils.get(guild.roles, id="gremlin")
-    #member = [m.id for m in r.members]
-    await ctx.send("test")
+async def login_gremlin(ctx):
+    await status_channel.send(server.login_gremlin(ctx.author))
+
+
+@bot.command(name="logout", help="Logout as a gremlin to show your serving status as offline")
+@commands.has_role("gremlin")
+async def logout_gremlin(ctx):
+    await status_channel.send(server.logout_gremlin(ctx.author))
+
+
+# Server Messages
+
+@bot.command(name="serverMessage", help="Sends a server message, or uses a previously stored shorthand \n Options: all")
+@commands.has_role("bot_tester")
+async def server_message(ctx, message, option=None, name=None):
+    if option == "all":
+        for channel in player_channels:
+            await channel.send(server.message(message))
+    elif option == "add" and name:
+        server.add_message(name, message)
+        await ctx.send("Message shortcut successfully saved as: " + name)
+    else:
+        await ctx.send(server.message(message))
+
+
+# Dice
+
+
+@bot.command(name="roll", help="Roll x dice")
+async def roll(ctx, *args):
+    num = int(args[0])
+    struggle = int(args[1]) if len(args) > 1 else None
+    if struggle:
+        result = roll_dice(num, struggle)
+        message = "Rolling: [" + str(result[0]) + "/" + str(num + struggle) + "] \n" + str(result[1]) \
+                  + " Threats Rolled"
+    else:
+        result = roll_dice(num)
+        message = "Rolling: [" + str(result[0]) + "/" + str(num) + "]"
+    await ctx.send(message)
 
 
 def start_bot():
     bot.run(TOKEN)
+
+
+
