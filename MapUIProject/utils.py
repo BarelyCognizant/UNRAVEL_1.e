@@ -1,29 +1,78 @@
 import pygame
+import glob
 
 colors = {"desert": [(201, 173, 71), (232, 212, 139)],
-          "forest": [(83, 171, 79), (120, 207, 116)],
-          "mesa": [(148, 62, 44), (191, 98, 78)],
+          "grass": [(83, 171, 79), (120, 207, 116)],
+          "ocean": [(41, 108, 217), (78, 131, 217)],
+          "snow": [(197, 206, 219), (255, 255, 255)],
+          "settlement": [(84, 84, 84), (120, 120, 120)],
           "background": (53, 54, 58)}
 
-tiles = ["forest", "desert", "mesa"]
+tilePaths = glob.glob("tiles\\used/*/*.png")
+for i in range(0, len(tilePaths)):
+    tilePaths[i] = tilePaths[i][len("tiles\\used\\"):]
 
+tiles = tilePaths
+
+vertical = False
 
 def getHexagon(x, y, w):
-    points = [
-        (x + (+0.000 * w * 0.5), y + (+1.000 * w * 0.5)),
-        (x + (+0.866 * w * 0.5), y + (+0.500 * w * 0.5)),
-        (x + (+0.866 * w * 0.5), y + (-0.500 * w * 0.5)),
-        (x + (+0.000 * w * 0.5), y + (-1.000 * w * 0.5)),
-        (x + (-0.866 * w * 0.5), y + (-0.500 * w * 0.5)),
-        (x + (-0.866 * w * 0.5), y + (+0.500 * w * 0.5))
-    ]
+    if vertical:
+        points = [
+            (x + (+0.000 * w * 0.5), y + (+1.000 * w * 0.5)),
+            (x + (+0.866 * w * 0.5), y + (+0.500 * w * 0.5)),
+            (x + (+0.866 * w * 0.5), y + (-0.500 * w * 0.5)),
+            (x + (+0.000 * w * 0.5), y + (-1.000 * w * 0.5)),
+            (x + (-0.866 * w * 0.5), y + (-0.500 * w * 0.5)),
+            (x + (-0.866 * w * 0.5), y + (+0.500 * w * 0.5))
+        ]
+    else:
+        points = [
+            (x + (+1.000 * w * 0.5), y + (+0.000 * w * 0.5)),
+            (x + (+0.500 * w * 0.5), y + (+0.866 * w * 0.5)),
+            (x + (-0.500 * w * 0.5), y + (+0.866 * w * 0.5)),
+            (x + (-1.000 * w * 0.5), y + (+0.000 * w * 0.5)),
+            (x + (-0.500 * w * 0.5), y + (-0.866 * w * 0.5)),
+            (x + (+0.500 * w * 0.5), y + (-0.866 * w * 0.5))
+        ]
     return points
+
+
+def getRect(x, y, w):
+    return pygame.Rect(x - (w * 0.5), y - (w * 0.5), w, w)
+
+
+def drawTile(surface, camera, x, y, image):
+    if (y % 2) == 0:
+        x = x + 0.5
+    x = (x * camera["scale"]) + camera["ox"]
+    y = (y * camera["scale"] * 0.866) + camera["oy"]
+    if not vertical:
+        x, y = y, x
+    image = pygame.transform.scale(image, (image.get_width() * 3.0, image.get_height() * 3.0))
+    rect = getRect(x, y, camera["scale"])
+    surface.blit(image, (x - camera["scale"] * 0.5, y - camera["scale"]))
+    return rect
+
+
+def getBounds(camera, x, y):
+    if (y % 2) == 0:
+        x = x + 0.5
+    x = (x * camera["scale"]) + camera["ox"]
+    y = (y * camera["scale"] * 0.866) + camera["oy"]
+    if not vertical:
+        x, y = y, x
+    rect = getRect(x, y, camera["scale"])
+    return rect
+
 
 def drawCell(surface, camera, x, y, color):
     if (y % 2) == 0:
         x = x + 0.5
     x = (x * camera["scale"]) + camera["ox"]
     y = (y * camera["scale"] * 0.866) + camera["oy"]
+    if not vertical:
+        x, y = y, x
     rect = pygame.draw.polygon(surface, color, getHexagon(x, y, camera["scale"]))
     return rect
 

@@ -16,7 +16,7 @@ async def create_map_object(mapName: str):
         "tiles": {
             0: {
                 "location": (0, 0),
-                "type": "forest"
+                "type": "grass\\forest.png"
             }
         }
     }

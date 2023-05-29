@@ -39,9 +39,14 @@ def center(bs, camera):
             maxY = b.loc[1]
         elif b.loc[1] < minY:
             minY = b.loc[1]
-    centerPoint = (((maxX - minX) / 2) + minX, ((maxY - minY) / 2) + minY)
-    camera["ox"] = ((screensize[0] - camera["scale"]) / 2) - centerPoint[0] * camera["scale"]
-    camera["oy"] = (screensize[1] / 2) - centerPoint[1] * camera["scale"] * 0.866
+    if utils.vertical:
+        centerPoint = (((maxX - minX) / 2) + minX, ((maxY - minY) / 2) + minY)
+        camera["ox"] = ((screensize[0] - camera["scale"]) / 2) - centerPoint[0] * camera["scale"]
+        camera["oy"] = (screensize[1] / 2) - centerPoint[1] * camera["scale"] * 0.866
+    else:
+        centerPoint = (((maxY - minY) / 2) + minY, ((maxX - minX) / 2) + minX)
+        camera["oy"] = ((screensize[0] - camera["scale"]) / 2) - centerPoint[0] * camera["scale"]
+        camera["ox"] = (screensize[1] / 2) - centerPoint[1] * camera["scale"] * 0.866
 
 
 pygame.init()
@@ -144,8 +149,12 @@ while True:
         elif event.type == MOUSEMOTION:
             if drag:
                 m_x, m_y = event.pos
-                camera["ox"] -= lastMousePos[0] - m_x
-                camera["oy"] -= lastMousePos[1] - m_y
+                if utils.vertical:
+                    camera["ox"] -= lastMousePos[0] - m_x
+                    camera["oy"] -= lastMousePos[1] - m_y
+                else:
+                    camera["oy"] -= lastMousePos[0] - m_x
+                    camera["ox"] -= lastMousePos[1] - m_y
                 lastMousePos = event.pos
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_p:
@@ -166,9 +175,18 @@ while True:
 
     DISPLAY_SURF.fill(utils.colors["background"])
     BsBoxes = []
+    lowestX = 10000
+    highestX = -10000
     for b in Ms:
-        rect = b.render(DISPLAY_SURF, camera)
-        BsBoxes.append((rect, b))
+        if lowestX > b.loc[0]:
+            lowestX = b.loc[0]
+        if highestX < b.loc[0]:
+            highestX = b.loc[0]
+    for i in range(lowestX, highestX + 1):
+        for b in Ms:
+            if b.loc[0] == i:
+                rect = b.get_bounds(camera)
+                BsBoxes.append((rect, b))
 
     if placementMode:
 
@@ -295,7 +313,20 @@ while True:
                                 n.add_neighbour(toAppend)
                         Ms.append(toAppend)
 
+        lowestX = 10000
+        highestX = -10000
+        for b in Ms:
+            if lowestX > b.loc[0]:
+                lowestX = b.loc[0]
+            if highestX < b.loc[0]:
+                highestX = b.loc[0]
+        for i in range(lowestX, highestX + 1):
+            for b in Ms:
+                if b.loc[0] == i:
+                    rect = b.render(DISPLAY_SURF, camera)
+
     else:
+
         if leftClick:
             x = lastMouseDownPos[0]
             y = lastMouseDownPos[1]
@@ -324,10 +355,25 @@ while True:
                 else:
                     currentFocusTile = None
 
+        lowestX = 10000
+        highestX = -10000
+        for b in Ms:
+            if lowestX > b.loc[0]:
+                lowestX = b.loc[0]
+            if highestX < b.loc[0]:
+                highestX = b.loc[0]
+        for i in range(lowestX, highestX + 1):
+            for b in Ms:
+                if b.loc[0] == i:
+                    rect = b.render(DISPLAY_SURF, camera, currentFocusTile == b)
+
     if currentFocusTile is not None:
-        currentFocusTile.render(DISPLAY_SURF, camera, True)
+        x = currentFocusTile.loc[0]
+        y = currentFocusTile.loc[1]
+        if not utils.vertical:
+            x, y = y, -x
         text = ["Tile ID: " + str(currentFocusTile.id),
-                "X: " + str(currentFocusTile.loc[0]) + ", Y:" + str(currentFocusTile.loc[1]),
+                "X: " + str(x) + ", Y:" + str(y),
                 "Type: " + str(currentFocusTile.type)]
         barWidth, fontHeight = infoFont.size(text[0])
         fullText = text[0]
@@ -342,7 +388,12 @@ while True:
     if placementMode:
         utils.addAlphaRect(DISPLAY_SURF, screensize[0] - 550, screensize[1] - 140, 550, 140, (40, 40, 40), 160)
         w = controlFont.size(utils.tiles[currentSelectionIndex])[0]
-        pygame.draw.polygon(DISPLAY_SURF, utils.colors[utils.tiles[currentSelectionIndex]][0], utils.getHexagon(screensize[0] - 70, screensize[1] - 70, camera["scale"]))
+        if utils.vertical:
+            pygame.draw.polygon(DISPLAY_SURF, utils.colors[utils.tiles[currentSelectionIndex].split("\\")[0]][0], utils.getHexagon(screensize[0] - 70, screensize[1] - 70, camera["scale"]))
+        else:
+            image = pygame.image.load("tiles/used/" + utils.tiles[currentSelectionIndex])
+            image = pygame.transform.scale(image, (image.get_width() * 3.0, image.get_height() * 3.0))
+            DISPLAY_SURF.blit(image, (screensize[0] - 70 - camera["scale"] * 0.5, screensize[1] - 70 - camera["scale"]))
         utils.addText(DISPLAY_SURF, utils.tiles[currentSelectionIndex], screensize[0] - 140 - w, screensize[1] - 100, controlFont,
                       (255, 255, 255))
 
