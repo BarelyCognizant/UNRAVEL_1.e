@@ -11,7 +11,6 @@ load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILD')
 
-
 bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
 
 
@@ -38,21 +37,17 @@ async def test(ctx):
     await ctx.send("test")
 
 
-@bot.command(name="create_player", help="Create an Empty Player with name Name")
+@bot.command(name="createPlayer", help="Create an Empty Player with name Name")
 @commands.has_role("bot_tester")
 async def add_new_player(ctx, name):
     await ctx.send(csh.add_new_player(name))
 
 
-@bot.command(name="view_player", help="view a given player's character sheet")
+@bot.command(name="viewPlayer", help="view a given player's character sheet")
 @commands.has_role("bot_tester")
-async def test(ctx):
-    csh.Player.generateBasePlayer()
-    await ctx.send("Player Created")
-
-
-
-
+async def view_player(ctx, name):
+    char_sheet = csh.get_player(name).get_player_desc()
+    await ctx.send(char_sheet)
 
 
 def start_bot():

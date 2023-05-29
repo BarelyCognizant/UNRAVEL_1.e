@@ -60,7 +60,7 @@ class Player:
             self.data = data
 
     def name(self):
-        return self.data.Name
+        return self.data["name"][1]
 
     def save_file(self, filepath):
         with open(filepath, 'w') as fp:
@@ -82,12 +82,12 @@ class Player:
                     attr_type = "string"
             return self.add_attribute(name, attr_type, value)
         elif operation == "remove":
-            return self.delAttribute(name)
+            return self.del_attribute(name)
 
     def add_attribute(self, name, attr_type, value=None):
         if name in self.data:
             return "cannot add attribute {name} because it already exists".format(name=name)
-        elif value == None:
+        elif value is None:
             if attr_type == "string":
                 self.data.update({name: (attr_type, "")})
             elif attr_type == "int":
@@ -99,12 +99,12 @@ class Player:
         else:
             if attr_type == "[string]":
                 if re.search("\[\s*\".*\"\s*(\,\s*\".*\"\s*)*]", value):
-                    self.data.update({name: (attr_type, str2list(value))})
+                    self.data.update({name: (attr_type, str_to_list(value))})
                 else:
                     return "cannot convert {value} to type [string]".format(value=value)
             elif attr_type == "{string:int}":
                 if re.search("\{.+\:[0-9]+(\,\s*.+\:[0-9]+)*}", value):
-                    self.data.update({name: (attr_type, str2dict(value))})
+                    self.data.update({name: (attr_type, str_to_dict(value))})
                 else:
                     return "cannot convert {value} to type int".format(value=value)
             elif attr_type == "int":
@@ -120,7 +120,7 @@ class Player:
         return "added attribute {name} with type {attr_type} and value {value}".format(name=name, attr_type=attr_type,
                                                                                        value=value)
 
-    def delAttribute(self, name):
+    def del_attribute(self, name):
         if name not in self.data:
             return "cannot delete attribute {name} because it doesn't exist".format(name=name)
         else:
@@ -203,7 +203,7 @@ class Player:
             if value.isdigit():
                 value = int(value)
             else:
-                value = str2dict(value)
+                value = str_to_dict(value)
 
         # match type of specified target, and inputted type
         if cur_type == "string":
