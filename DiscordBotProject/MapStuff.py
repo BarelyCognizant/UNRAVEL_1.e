@@ -5,7 +5,7 @@ import requests
 # Online Python - IDE, Editor, Compiler, Interpreter
 
 
-class MapStuff:
+class Map:
     def __init__(self, ip_address="https://b112-2a0e-cb01-2d-2e00-18c7-6c1f-9246-110d.ngrok-free.app"):
         self.ipAddress = ip_address
         self.mapData = ast.literal_eval(requests.get(self.ipAddress + "/map/Terra").text)
@@ -119,3 +119,17 @@ class MapStuff:
             return self.SE(player)
         else:
             return "Impossible direction provided. Valid directions: NW, N, NE, SE, S, SW"
+
+    def set_label(self, tile_id, label):
+        r = ast.literal_eval(requests.post(
+            self.ipAddress + "/map/Terra/label/" + tile_id + "/" + label).text)
+        return r["message"] if "message" in r else "Label successfully set"
+
+    def set_comments(self, tile_id, comments):
+        r = ast.literal_eval(requests.post(
+            self.ipAddress + "/map/Terra/comments/"+tile_id + "/" + comments).text)
+        return r["message"] if "message" in r else "Comment successfully set"
+    def add_player(self, tile_id, name, color):
+        r = ast.literal_eval(requests.post(
+            self.ipAddress + "/map/Terra/players/" + name + "/" + tile_id + "/" + color).text)
+        return r["message"] if "message" in r else "Player successfully added"

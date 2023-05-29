@@ -8,7 +8,7 @@ from discord.ext import commands
 import character_sheet_handler as csh
 import server
 from dice import roll_dice
-from MapStuff import MapStuff as Map
+from MapStuff import Map
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -119,7 +119,7 @@ async def roll(ctx, *args):
     await ctx.send(message)
 
 
-# Movement
+# Movement / Map API
 move_help = "Moves a given player based on the parameters \n " \
             "Player: the player to move \n" \
             "Direction: NW, N, NE, SE, S, SW, <TileID> ;(this is not case sensitive)" \
@@ -134,6 +134,16 @@ async def move(ctx, player, direction):
     else:
         await ctx.send(server_map.move_direction(player, direction.upper()))
 
+
+@bot.command(name="map", help="Allows Editing of the Map")
+@commands.has_role("gremlin")
+async def test(ctx, option, tile, content, color=None):
+    if option.lower() == "add" and color:
+        await ctx.send(server_map.add_player(tile, content, color))
+    elif option.lower() == "label":
+        await ctx.send(server_map.set_label(tile, content))
+    elif option.lower() == "comment":
+        await ctx.send(server_map.set_comments(tile, content))
 
 # Testing
 
