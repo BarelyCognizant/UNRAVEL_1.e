@@ -40,6 +40,11 @@ for i in range(0, len(tilePaths)):
     tilePaths[i] = tilePaths[i][len("tiles\\used\\"):]
 
 tiles = tilePaths
+palettes = []
+for tile in tiles:
+    palettes.append(tile.split("\\")[0])
+
+palettes = list(dict.fromkeys(palettes))
 
 vertical = False
 

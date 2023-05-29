@@ -59,20 +59,36 @@ CHECKHASHEVENT, t = pygame.USEREVENT+1, 10000
 pygame.time.set_timer(CHECKHASHEVENT, t)
 
 
-class Button:
-    def __init__(self, bounds, onClick):
+class PaletteButton:
+    def __init__(self, bounds, paletteName):
         self.bounds = bounds
-        self.onClick = onClick
+        self.paletteName = paletteName
 
     def click(self, m_p):
+        global currentPalette
+        global currentSelectionIndex
         if self.bounds.collidepoint(m_p):
-            self.onClick()
+            currentPalette = self.paletteName
+            while utils.tiles[currentSelectionIndex].split("\\")[0] != currentPalette:
+                currentSelectionIndex += 1
+                if currentSelectionIndex >= len(utils.tiles):
+                    currentSelectionIndex = 0
             return True
         else:
             return False
 
 
 buttons = []
+
+w = 0
+for palette in utils.palettes:
+    tw = utils.labelFont.size(palette)[0]
+    if tw > w:
+        w = tw
+count = -1
+for palette in utils.palettes:
+    count += 1
+    buttons.append(PaletteButton(pygame.Rect(screensize[0] - w - 40, screensize[1] - 190 - (50 * count), w + 40, 40), palette))
 
 DISPLAY_SURF = pygame.display.set_mode(screensize)
 DISPLAY_SURF.fill(utils.colors["background"])
@@ -84,7 +100,8 @@ camera = {"scale": scale,
 drag = False
 lastMousePos = (0, 0)
 lastMouseDownPos = (0, 0)
-currentSelectionIndex = 0
+currentSelectionIndex = 5
+currentPalette = "grass"
 placementMode = False
 
 currentFocusTile = None
@@ -112,6 +129,10 @@ while True:
                 currentSelectionIndex -= 1
                 if currentSelectionIndex < 0:
                     currentSelectionIndex = len(utils.tiles) - 1
+                while utils.tiles[currentSelectionIndex].split("\\")[0] != currentPalette:
+                    currentSelectionIndex -= 1
+                    if currentSelectionIndex < 0:
+                        currentSelectionIndex = len(utils.tiles) - 1
             #    camera["scale"] += 15
             #    m_x, m_y = event.pos
             #    camera["ox"] -= ((m_x / screensize[0]) - 0.5) * 15
@@ -120,6 +141,10 @@ while True:
                 currentSelectionIndex += 1
                 if currentSelectionIndex >= len(utils.tiles):
                     currentSelectionIndex = 0
+                while utils.tiles[currentSelectionIndex].split("\\")[0] != currentPalette:
+                    currentSelectionIndex += 1
+                    if currentSelectionIndex >= len(utils.tiles):
+                        currentSelectionIndex = 0
             #    camera["scale"] -= 15
             #    m_x, m_y = event.pos
             #    camera["ox"] += ((m_x / screensize[0]) - 0.5) * 15
@@ -168,6 +193,13 @@ while True:
                 BsBoxes.append((rect, b))
 
     if placementMode:
+
+        x = lastMouseDownPos[0]
+        y = lastMouseDownPos[1]
+
+        buttonClicked = False
+        for button in buttons:
+            buttonClicked = buttonClicked or button.click(lastMouseDownPos)
 
         edgePoints = []
         for b in Ms:
@@ -251,7 +283,7 @@ while True:
                     edge = True
                     utils.drawCell(DISPLAY_SURF, camera, allBoxs[closestBox][1][0], allBoxs[closestBox][1][1], (79, 80, 87))
 
-        if hoverPoint is not None:
+        if hoverPoint is not None and not buttonClicked:
             toAppend = None
             if leftClick and edge:
                 toAppend = Tile(hoverPoint, utils.tiles[currentSelectionIndex], unique_id=mapData["idCount"])
@@ -285,10 +317,36 @@ while True:
                                 n.add_neighbour(toAppend)
                         Ms.append(toAppend)
             elif rightClick and not edge:
-                mapData = ast.literal_eval(requests.delete("http://" + ipAddress +
-                                                         "/map/" + sys.argv[1] +
-                                                         "/tile/" + str(hoverPoint.id) +
-                                                         "/" + currentMapHash).text)
+                empty = True
+                for p in Ps:
+                    if p.loc == hoverPoint.id:
+                        empty = False
+                        break
+                if empty:
+                    mapData = ast.literal_eval(requests.delete("http://" + ipAddress +
+                                                             "/map/" + sys.argv[1] +
+                                                             "/tile/" + str(hoverPoint.id) +
+                                                             "/" + currentMapHash).text)
+                    if "message" in mapData and mapData["message"] == "This tile does not exist.":
+                        print("tile already gone")
+                    else:
+                        if "message" in mapData:
+                            mapData = ast.literal_eval(requests.get("http://" + ipAddress + "/map/" + sys.argv[1]).text)
+
+                            currentMapHash, Ms, Ps = utils.updateData(mapData)
+                            mapData = ast.literal_eval(requests.delete("http://" + ipAddress +
+                                                             "/map/" + sys.argv[1] +
+                                                             "/tile/" + str(hoverPoint.id) +
+                                                             "/" + currentMapHash).text)
+                        if "message" not in mapData:
+                            currentMapHash, Ms, Ps = utils.updateData(mapData)
+            elif leftClick and not edge:
+                newType = utils.tiles[currentSelectionIndex]
+                mapData = ast.literal_eval(requests.put("http://" + ipAddress +
+                                                           "/map/" + sys.argv[1] +
+                                                           "/tile/" + newType +
+                                                           "/" + str(hoverPoint.id) +
+                                                           "/" + currentMapHash).text)
                 if "message" in mapData and mapData["message"] == "This tile does not exist.":
                     print("tile already gone")
                 else:
@@ -296,10 +354,12 @@ while True:
                         mapData = ast.literal_eval(requests.get("http://" + ipAddress + "/map/" + sys.argv[1]).text)
 
                         currentMapHash, Ms, Ps = utils.updateData(mapData)
-                        mapData = ast.literal_eval(requests.delete("http://" + ipAddress +
-                                                         "/map/" + sys.argv[1] +
-                                                         "/tile/" + str(hoverPoint.id) +
-                                                         "/" + currentMapHash).text)
+                        mapData = ast.literal_eval(requests.put("http://" + ipAddress +
+                                                                "/map/" + sys.argv[1] +
+                                                                "/tile/" + newType +
+                                                                "/" + str(hoverPoint.id) +
+                                                                "/" + currentMapHash).text)
+
                     if "message" not in mapData:
                         currentMapHash, Ms, Ps = utils.updateData(mapData)
     else:
@@ -308,29 +368,24 @@ while True:
             x = lastMouseDownPos[0]
             y = lastMouseDownPos[1]
 
-            buttonClicked = False
-            for button in buttons:
-                buttonClicked = buttonClicked or button.click(lastMouseDownPos)
-
-            if not buttonClicked:
-                if len(BsBoxes) > 0:
-                    closestBox = 0
-                    closestBoxDistance = distanceBetweenTwoPoints((x, y), BsBoxes[0][0].center)
-                    for i in range(1, len(BsBoxes)):
-                        dist = distanceBetweenTwoPoints((x, y), BsBoxes[i][0].center)
-                        if dist < closestBoxDistance:
-                            closestBoxDistance = dist
-                            closestBox = i
-                    if BsBoxes[closestBox][0].collidepoint((x, y)):
-                        if placementMode:
-                            if BsBoxes[closestBox][1].type != "main":
-                                Ms.remove(BsBoxes[closestBox][1])
-                        else:
-                            currentFocusTile = BsBoxes[closestBox][1]
+            if len(BsBoxes) > 0:
+                closestBox = 0
+                closestBoxDistance = distanceBetweenTwoPoints((x, y), BsBoxes[0][0].center)
+                for i in range(1, len(BsBoxes)):
+                    dist = distanceBetweenTwoPoints((x, y), BsBoxes[i][0].center)
+                    if dist < closestBoxDistance:
+                        closestBoxDistance = dist
+                        closestBox = i
+                if BsBoxes[closestBox][0].collidepoint((x, y)):
+                    if placementMode:
+                        if BsBoxes[closestBox][1].type != "main":
+                            Ms.remove(BsBoxes[closestBox][1])
                     else:
-                        currentFocusTile = None
+                        currentFocusTile = BsBoxes[closestBox][1]
                 else:
                     currentFocusTile = None
+            else:
+                currentFocusTile = None
 
     lowestX = 10000
     highestX = -10000
@@ -396,16 +451,29 @@ while True:
                 utils.addText(DISPLAY_SURF, text[i], 20, 20 + (i * fontHeight), utils.infoFont, (255, 255, 255))
 
     if placementMode:
-        utils.addAlphaRect(DISPLAY_SURF, screensize[0] - 550, screensize[1] - 140, 550, 140, (40, 40, 40), 160)
         w = utils.controlFont.size(utils.tiles[currentSelectionIndex])[0]
+        utils.addAlphaRect(DISPLAY_SURF, screensize[0] - 160 - w, screensize[1] - 140, 160 + w, 140, (40, 40, 40), 160)
         if utils.vertical:
             pygame.draw.polygon(DISPLAY_SURF, utils.colors[utils.tiles[currentSelectionIndex].split("\\")[0]][0], utils.getHexagon(screensize[0] - 70, screensize[1] - 70, camera["scale"]))
         else:
             image = pygame.image.load("tiles/used/" + utils.tiles[currentSelectionIndex])
             image = pygame.transform.scale(image, (image.get_width() * 3.0, image.get_height() * 3.0))
             DISPLAY_SURF.blit(image, (screensize[0] - 70 - camera["scale"] * 0.5, screensize[1] - 70 - camera["scale"]))
-        utils.addText(DISPLAY_SURF, utils.tiles[currentSelectionIndex], screensize[0] - 140 - w, screensize[1] - 100, utils.controlFont,
-                      (255, 255, 255))
+        utils.addText(DISPLAY_SURF, utils.tiles[currentSelectionIndex], screensize[0] - 140 - w, screensize[1] - 100, utils.controlFont, (255, 255, 255))
+
+        w = 0
+        for palette in utils.palettes:
+            tw = utils.labelFont.size(palette)[0]
+            if tw > w:
+                w = tw
+        count = -1
+        for palette in utils.palettes:
+            count += 1
+            color = 40
+            if currentPalette == palette:
+                color = 100
+            utils.addAlphaRect(DISPLAY_SURF, screensize[0] - w - 40, screensize[1] - 190 - (50 * count), w + 40, 40, (color, color, color), 160)
+            utils.addText(DISPLAY_SURF, palette, screensize[0] - utils.labelFont.size(palette)[0] - 20, screensize[1] - 185 - (50 * count), utils.labelFont, (255, 255, 255))
 
     pygame.display.update()
 

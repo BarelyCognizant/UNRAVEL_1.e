@@ -89,6 +89,27 @@ async def delete_tile(mapName: str, id: str, hash: str):
     return {"message": "Map does not exist."}
 
 
+@app.put("/map/{mapName}/tile/{type}/{id}/{hash}", status_code=200)
+async def change_tile(mapName: str, type:str, id: str, hash: str):
+    if os.path.isfile("maps/" + mapName + ".json"):
+        with open("maps/" + mapName + ".json") as mapJsonFile:
+            mapData = json.load(mapJsonFile)
+        if mapData["hash"] == hash:
+            for tile in mapData["tiles"]:
+                if tile == id:
+                    mapData["hash"] = str(uuid.uuid4())
+                    mapData["tiles"][tile]["type"] = type.replace("_", "\\")
+                    print(tile)
+                    os.remove("maps/" + mapName + ".json")
+                    with open("maps/" + mapName + ".json", "x") as outfile:
+                        json.dump(mapData, outfile)
+                    return mapData
+            return {"message": "This tile does not exist."}
+        else:
+            return {"message": "Map has change since your last pull. Sync and request again."}
+    return {"message": "Map does not exist."}
+
+
 @app.post("/map/{mapName}/label/{id}/{label}", status_code=201)
 async def append_label(mapName: str, id: str, label: str):
     if os.path.isfile("maps/" + mapName + ".json"):
