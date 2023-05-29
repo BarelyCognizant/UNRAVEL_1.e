@@ -59,8 +59,47 @@ class Player:
     def update_data(self, update):
         self.data.update(update)
 
-    def data_curry(self, function, key):
-        return function(self.data[key])
+    def get_data(self, key=None):
+        if key is None:
+            return self.data
+        else:
+            if key in self.data:
+                return self.data[key]
+            else:
+                return None
 
     def save_to_file(self, filepath):
         save_file(filepath, self.data)
+
+    def get_desc(self, key=None, value=None, initial_indent="", output="", simple_style="colon"):
+        indent = ""
+        output = ""
+
+        def append(string):
+            return output + initial_indent + indent + string + "\n"
+
+        if value is None:
+            value = self.data
+
+        recur = []
+        if type(value) == int or type(value) == str:
+            if key is None:
+                return append(value)
+            elif simple_style == "colon":
+                return append(key + ": " + value)
+            elif simple_style == "paren":
+                return append(key + "(" + value + ")")
+
+        elif type(value) == list:
+            if key is not None:
+                output = append(key)
+            for v in value:
+                output = output + self.get_desc(value=v, initial_indent=initial_indent + "  ")
+        elif type(value) == tuple:
+            output = output + self.get_desc(key=value[0], value=value[1])
+        elif type(value) == dict:
+            if key is not None:
+                output = append(key)
+            for k, v in value.items():
+                output = append(self.get_desc(key=k, value=v))
+        return output
