@@ -6,7 +6,7 @@ class Tile:
     loc = (0, 0)
     id = 0
     type = ""
-    color = utils.colors["grass"]
+    color = None
     neighbours = []
     label = ""
     comments = ""

@@ -13,6 +13,7 @@ async def create_map_object(mapName: str):
     newMapData = {
         "hash": str(uuid.uuid4()),
         "name": mapName,
+        "idCount": 1,
         "tiles": {
             0: {
                 "location": (0, 0),
@@ -56,11 +57,33 @@ async def create_tile(mapName: str, x: int, y:int, type: str, id: int, hash: str
                 if mapData["tiles"][tile]["location"][0] == x and mapData["tiles"][tile]["location"][1] == y:
                     return {"message": "This tile already exists."}
             mapData["hash"] = str(uuid.uuid4())
+            mapData["idCount"] += 1
             mapData["tiles"][id] = {"location": [x, y], "type": type.replace("_", "\\"), "label": "", "comments": ""}
             os.remove("maps/" + mapName + ".json")
             with open("maps/" + mapName + ".json", "x") as outfile:
                 json.dump(mapData, outfile)
             return mapData
+        else:
+            return {"message": "Map has change since your last pull. Sync and request again."}
+    return {"message": "Map does not exist."}
+
+
+@app.delete("/map/{mapName}/tile/{id}/{hash}", status_code=200)
+async def delete_tile(mapName: str, id: str, hash: str):
+    if os.path.isfile("maps/" + mapName + ".json"):
+        with open("maps/" + mapName + ".json") as mapJsonFile:
+            mapData = json.load(mapJsonFile)
+        if mapData["hash"] == hash:
+            for tile in mapData["tiles"]:
+                if tile == id:
+                    mapData["hash"] = str(uuid.uuid4())
+                    mapData["tiles"].pop(tile)
+                    print(tile)
+                    os.remove("maps/" + mapName + ".json")
+                    with open("maps/" + mapName + ".json", "x") as outfile:
+                        json.dump(mapData, outfile)
+                    return mapData
+            return {"message": "This tile does not exist."}
         else:
             return {"message": "Map has change since your last pull. Sync and request again."}
     return {"message": "Map does not exist."}

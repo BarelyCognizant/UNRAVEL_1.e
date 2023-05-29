@@ -4,7 +4,7 @@ import utils
 
 class Player:
     loc = 0
-    color = utils.colors["red"]
+    color = None
     name = ""
 
     def __init__(self, name, location, color):

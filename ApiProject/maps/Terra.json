@@ -1,1 +1,1 @@
-{"hash": "6d290685-7918-46bf-a4a5-ea78c2731d04", "name": "Terra", "tiles": {"0": {"location": [0, 0], "type": "grass\\forest.png", "label": "", "comments": ""}}, "players": {"Soren": {"tileId": "0", "color": "red"}}}
+{"hash": "a6fe9c0f-1671-4564-8004-592c9c435249", "name": "Terra", "idCount": 10, "tiles": {"0": {"location": [0, 0], "type": "grass\\forest.png", "label": "", "comments": ""}}, "players": {}}

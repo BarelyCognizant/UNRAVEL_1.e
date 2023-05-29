@@ -91,19 +91,7 @@ currentFocusTile = None
 
 mapData = ast.literal_eval(requests.get("http://" + ipAddress + "/map/" + sys.argv[1]).text)
 
-currentMapHash = mapData["hash"]
-Ms = []
-for tile in mapData["tiles"]:
-    toAppend = Tile(mapData["tiles"][tile]["location"], mapData["tiles"][tile]["type"], tile, mapData["tiles"][tile]["label"], mapData["tiles"][tile]["comments"])
-    neighbours = utils.find_tiles(utils.generate_neighbour_locs(mapData["tiles"][tile]["location"]), Ms)
-    toAppend.neighbours = neighbours
-    for n in neighbours:
-        if n is not None:
-            n.add_neighbour(toAppend)
-    Ms.append(toAppend)
-Ps = []
-for player in mapData["players"]:
-    Ps.append(Player(player, mapData["players"][player]["tileId"], mapData["players"][player]["color"]))
+currentMapHash, Ms, Ps = utils.updateData(mapData)
 
 center(Ms, camera)
 
@@ -162,19 +150,7 @@ while True:
         elif event.type == CHECKHASHEVENT:
             mapData = ast.literal_eval(requests.get("http://" + ipAddress + "/map/" + sys.argv[1]).text)
             if currentMapHash != mapData["hash"]:
-                currentMapHash = mapData["hash"]
-                Ms = []
-                for tile in mapData["tiles"]:
-                    toAppend = Tile(mapData["tiles"][tile]["location"], mapData["tiles"][tile]["type"], tile, mapData["tiles"][tile]["label"], mapData["tiles"][tile]["comments"])
-                    neighbours = utils.find_tiles(utils.generate_neighbour_locs(mapData["tiles"][tile]["location"]), Ms)
-                    toAppend.neighbours = neighbours
-                    for n in neighbours:
-                        if n is not None:
-                            n.add_neighbour(toAppend)
-                    Ms.append(toAppend)
-                Ps = []
-                for player in mapData["players"]:
-                    Ps.append(Player(player, mapData["players"][player]["tileId"], mapData["players"][player]["color"]))
+                currentMapHash, Ms, Ps = utils.updateData(mapData)
 
     DISPLAY_SURF.fill(utils.colors["background"])
     BsBoxes = []
@@ -259,22 +235,26 @@ while True:
         hoverPoint = None
         for e in edgePoints:
             edgeBoxs.append((utils.drawCell(DISPLAY_SURF, camera, e[0], e[1], (63, 64, 69)), e))
-        if len(edgeBoxs) > 0:
+        allBoxs = edgeBoxs + BsBoxes
+        edge = False
+        if len(allBoxs) > 0:
             closestBox = 0
-            closestBoxDistance = distanceBetweenTwoPoints((m_x, m_y), edgeBoxs[0][0].center)
-            for i in range(1, len(edgeBoxs)):
-                dist = distanceBetweenTwoPoints((m_x, m_y), edgeBoxs[i][0].center)
+            closestBoxDistance = distanceBetweenTwoPoints((m_x, m_y), allBoxs[0][0].center)
+            for i in range(1, len(allBoxs)):
+                dist = distanceBetweenTwoPoints((m_x, m_y), allBoxs[i][0].center)
                 if dist < closestBoxDistance:
                     closestBoxDistance = dist
                     closestBox = i
-            if edgeBoxs[closestBox][0].collidepoint((m_x, m_y)):
-                hoverPoint = edgeBoxs[closestBox][1]
-                utils.drawCell(DISPLAY_SURF, camera, edgeBoxs[closestBox][1][0], edgeBoxs[closestBox][1][1], (79, 80, 87))
+            if allBoxs[closestBox][0].collidepoint((m_x, m_y)):
+                hoverPoint = allBoxs[closestBox][1]
+                if closestBox < len(edgeBoxs):
+                    edge = True
+                    utils.drawCell(DISPLAY_SURF, camera, allBoxs[closestBox][1][0], allBoxs[closestBox][1][1], (79, 80, 87))
 
         if hoverPoint is not None:
             toAppend = None
-            if leftClick:
-                toAppend = Tile(hoverPoint, utils.tiles[currentSelectionIndex], unique_id=len(Ms))
+            if leftClick and edge:
+                toAppend = Tile(hoverPoint, utils.tiles[currentSelectionIndex], unique_id=mapData["idCount"])
                 mapData = ast.literal_eval(requests.post("http://" + ipAddress +
                                                          "/map/" + sys.argv[1] +
                                                          "/tile/" + str(toAppend.loc[0]) +
@@ -287,20 +267,7 @@ while True:
                 else:
                     if "message" in mapData:
                         mapData = ast.literal_eval(requests.get("http://" + ipAddress + "/map/" + sys.argv[1]).text)
-                        currentMapHash = mapData["hash"]
-                        Ms = []
-                        for tile in mapData["tiles"]:
-                            toAppend = Tile(mapData["tiles"][tile]["location"], mapData["tiles"][tile]["type"], tile, mapData["tiles"][tile]["label"], mapData["tiles"][tile]["comments"])
-                            neighbours = utils.find_tiles(
-                                utils.generate_neighbour_locs(mapData["tiles"][tile]["location"]), Ms)
-                            toAppend.neighbours = neighbours
-                            for n in neighbours:
-                                if n is not None:
-                                    n.add_neighbour(toAppend)
-                            Ms.append(toAppend)
-                        Ps = []
-                        for player in mapData["players"]:
-                            Ps.append(Player(player, mapData["players"][player]["tileId"], mapData["players"][player]["color"]))
+                        currentMapHash, Ms, Ps = utils.updateData(mapData)
                         mapData = ast.literal_eval(requests.post("http://" + ipAddress +
                                                                  "/map/" + sys.argv[1] +
                                                                  "/tile/" + str(toAppend.loc[0]) +
@@ -317,7 +284,24 @@ while True:
                             if n is not None:
                                 n.add_neighbour(toAppend)
                         Ms.append(toAppend)
+            elif rightClick and not edge:
+                mapData = ast.literal_eval(requests.delete("http://" + ipAddress +
+                                                         "/map/" + sys.argv[1] +
+                                                         "/tile/" + str(hoverPoint.id) +
+                                                         "/" + currentMapHash).text)
+                if "message" in mapData and mapData["message"] == "This tile does not exist.":
+                    print("tile already gone")
+                else:
+                    if "message" in mapData:
+                        mapData = ast.literal_eval(requests.get("http://" + ipAddress + "/map/" + sys.argv[1]).text)
 
+                        currentMapHash, Ms, Ps = utils.updateData(mapData)
+                        mapData = ast.literal_eval(requests.delete("http://" + ipAddress +
+                                                         "/map/" + sys.argv[1] +
+                                                         "/tile/" + str(hoverPoint.id) +
+                                                         "/" + currentMapHash).text)
+                    if "message" not in mapData:
+                        currentMapHash, Ms, Ps = utils.updateData(mapData)
     else:
 
         if leftClick:

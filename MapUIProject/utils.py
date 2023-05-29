@@ -1,6 +1,9 @@
 import pygame
 import glob
 
+from tile import Tile
+from player import Player
+
 infoFont = ""
 controlFont = ""
 labelFont = ""
@@ -151,3 +154,21 @@ def find_tiles(locs, bs):
         if b.loc in locs:
             ret.append(b)
     return ret
+
+
+def updateData(mapData):
+    currentMapHash = mapData["hash"]
+    Ms = []
+    for tile in mapData["tiles"]:
+        toAppend = Tile(mapData["tiles"][tile]["location"], mapData["tiles"][tile]["type"], tile,
+                        mapData["tiles"][tile]["label"], mapData["tiles"][tile]["comments"])
+        neighbours = find_tiles(generate_neighbour_locs(mapData["tiles"][tile]["location"]), Ms)
+        toAppend.neighbours = neighbours
+        for n in neighbours:
+            if n is not None:
+                n.add_neighbour(toAppend)
+        Ms.append(toAppend)
+    Ps = []
+    for player in mapData["players"]:
+        Ps.append(Player(player, mapData["players"][player]["tileId"], mapData["players"][player]["color"]))
+    return currentMapHash, Ms, Ps
