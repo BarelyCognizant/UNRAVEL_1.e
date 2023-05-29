@@ -1,12 +1,14 @@
-import ast, requests
+import ast
+import requests
 
 
 # Online Python - IDE, Editor, Compiler, Interpreter
 
 
 class MapStuff:
-    ipAddress = "https://b112-2a0e-cb01-2d-2e00-18c7-6c1f-9246-110d.ngrok-free.app";
-    mapData = ast.literal_eval(requests.get(ipAddress + "/map/Terra").text)
+    def __init__(self, ip_address="https://b112-2a0e-cb01-2d-2e00-18c7-6c1f-9246-110d.ngrok-free.app"):
+        self.ipAddress = ip_address
+        self.mapData = ast.literal_eval(requests.get(self.ipAddress + "/map/Terra").text)
 
     def updateMap(self):
         self.mapData = ast.literal_eval(requests.get(self.ipAddress + "/map/Terra").text)  # 192.168.1.22
@@ -99,3 +101,19 @@ class MapStuff:
             return self.move(X, Y + 1, Player)
         else:
             return self.move(X + 1, Y + 1, Player)
+
+    def move_direction(self, player, direction):
+        if direction == "N":
+            return self.N(player)
+        elif direction == "NW":
+            return self.NW(player)
+        elif direction == "NE":
+            return self.NE(player)
+        elif direction == "S":
+            return self.S(player)
+        elif direction == "SW":
+            return self.SW(player)
+        elif direction == "SE":
+            return self.SE(player)
+        else:
+            return "Impossible direction provided. Valid directions: NW, N, NE, SE, S, SW"

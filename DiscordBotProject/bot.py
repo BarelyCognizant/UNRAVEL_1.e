@@ -8,6 +8,7 @@ from discord.ext import commands
 import character_sheet_handler as csh
 import server
 from dice import roll_dice
+from MapStuff import MapStuff as Map
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -17,12 +18,14 @@ bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
 
 status_channel = None
 player_channels = []
+server_map = None
 
 
 @bot.event
 async def on_ready():
     global status_channel
     global player_channels
+    global server_map
     guild = discord.utils.get(bot.guilds, name=GUILD)
     print(
         f'{bot.user} is connected to the following guild:\n'
@@ -40,17 +43,16 @@ async def on_ready():
     server.load_gremlins(gremlins)
     server.load_messages()
 
+    server_map = Map()
+
+
+# Permissions
+
 
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.errors.CheckFailure):
         await ctx.send('You do not have the correct role for this command.')
-
-
-@bot.command(name="test", help="test")
-@commands.has_role("bot_tester")
-async def test(ctx):
-    await ctx.send("test")
 
 
 # Character Sheet
@@ -88,7 +90,7 @@ async def logout_gremlin(ctx):
 # Server Messages
 
 @bot.command(name="serverMessage", help="Sends a server message, or uses a previously stored shorthand \n Options: all")
-@commands.has_role("bot_tester")
+@commands.has_role("gremlin")
 async def server_message(ctx, message, option=None, name=None):
     if option == "all":
         for channel in player_channels:
@@ -117,8 +119,30 @@ async def roll(ctx, *args):
     await ctx.send(message)
 
 
+# Movement
+move_help = "Moves a given player based on the parameters \n " \
+            "Player: the player to move \n" \
+            "Direction: NW, N, NE, SE, S, SW, set ;(this is not case sensitive)" \
+            "Optional: TileID ; The tile to set a player to if the set direction is chosen"
+
+
+@bot.command(name="move", help=move_help)
+@commands.has_role("gremlin")
+async def move(ctx, player, direction, tile_id=None):
+    if direction.lower() == "set" and tile_id:
+        await ctx.send(server_map.botMove(tile_id, player))
+    else:
+        await ctx.send(server_map.move_direction(player, direction.lower()))
+
+
+
+# Testing
+
+@bot.command(name="test", help="test")
+@commands.has_role("bot_tester")
+async def test(ctx):
+    await ctx.send("test")
+
+
 def start_bot():
     bot.run(TOKEN)
-
-
-
