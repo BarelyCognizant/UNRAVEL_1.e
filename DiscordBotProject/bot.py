@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from discord.ext import commands
 
 import character_sheet_handler as csh
+import server
+from dice import roll_dice
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -13,9 +15,12 @@ GUILD = os.getenv('DISCORD_GUILD')
 
 bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
 
+status_channel = None
+
 
 @bot.event
 async def on_ready():
+    global status_channel
     guild = discord.utils.get(bot.guilds, name=GUILD)
     print(
         f'{bot.user} is connected to the following guild:\n'
@@ -23,6 +28,12 @@ async def on_ready():
     )
     members = '\n - '.join([member.name for member in guild.members])
     print(f'Guild Members:\n - {members}')
+
+    status_channel = [channel for channel in guild.channels if channel.name == "server-status"][0]
+
+    gremlin_role = discord.utils.get(guild.roles, id=1112687715750785075)
+    gremlins = [m.display_name for m in gremlin_role.members]
+    server.load_gremlins(gremlins)
 
 
 @bot.event
@@ -54,11 +65,28 @@ async def view_player(ctx, name):
 
 @bot.command(name="login", help="Login as a gremlin to show your serving status as online")
 @commands.has_role("gremlin")
-async def login_gremlin(ctx, name):
-    guild = discord.utils.get(bot.guilds, name=GUILD)
-    role = discord.utils.get(guild.roles, id="gremlin")
-    #member = [m.id for m in r.members]
-    await ctx.send("test")
+async def login_gremlin(ctx):
+    await status_channel.send(server.login_gremlin(ctx.author))
+
+
+@bot.command(name="logout", help="Logout as a gremlin to show your serving status as offline")
+@commands.has_role("gremlin")
+async def logout_gremlin(ctx):
+    await status_channel.send(server.logout_gremlin(ctx.author))
+
+
+@bot.command(name="roll", help="Roll x dice")
+async def roll(ctx, *args):
+    num = int(args[0])
+    struggle = int(args[1]) if len(args) > 1 else None
+    if struggle:
+        result = roll_dice(num, struggle)
+        message = "Rolling: [" + str(result[0]) + "/" + str(num + struggle) + "] \n" + str(result[1]) \
+                  + " Threats Rolled"
+    else:
+        result = roll_dice(num)
+        message = "Rolling: [" + str(result[0]) + "/" + str(num) + "]"
+    await ctx.send(message)
 
 
 def start_bot():
