@@ -38,13 +38,12 @@ async def test(ctx):
 
 
 @bot.command(name="createPlayer", help="Create an Player with a given name \n name: name")
-@commands.has_role("bot_tester")
+@commands.has_role("gremlin")
 async def add_new_player(ctx, name):
     await ctx.send(csh.add_new_player(name))
 
 
 @bot.command(name="viewPlayer", help="View a given player's character sheet \n name: the name of the player to view")
-@commands.has_role("bot_tester")
 async def view_player(ctx, name):
     player = csh.get_player(name)
     if player is not None:
@@ -53,9 +52,12 @@ async def view_player(ctx, name):
         await ctx.send("No player exists with that name")
 
 
-@bot.command(name="inventory", help="View a given player's character sheet \n name: the name of the player to view")
-@commands.has_role("bot_tester")
-async def test(ctx):
+@bot.command(name="login", help="Login as a gremlin to show your serving status as online")
+@commands.has_role("gremlin")
+async def login_gremlin(ctx, name):
+    guild = discord.utils.get(bot.guilds, name=GUILD)
+    role = discord.utils.get(guild.roles, id="gremlin")
+    #member = [m.id for m in r.members]
     await ctx.send("test")
 
 
