@@ -57,7 +57,9 @@ class MapStuff:
     # botMove is not properly implemented in terms of validation
     def botMove(self, tileID, Player):
         self.updateMap()
-        ast.literal_eval(requests.put(self.ipAddress + "/map/Terra/players/" + str(Player) + "/" + str(tileID)).text)
+        r = ast.literal_eval(requests.put(
+            self.ipAddress + "/map/Terra/players/" + str(Player) + "/" + str(tileID)).text)
+        return r["message"] if "message" in r else "Player successfully moved"
 
     def N(self, Player):
         self.updateMap()

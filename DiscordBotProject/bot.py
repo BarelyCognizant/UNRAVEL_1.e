@@ -132,7 +132,7 @@ async def move(ctx, player, direction, tile_id=None):
     if direction.lower() == "set" and tile_id:
         await ctx.send(server_map.botMove(tile_id, player))
     else:
-        await ctx.send(server_map.move_direction(player, direction.lower()))
+        await ctx.send(server_map.move_direction(player, direction.upper()))
 
 
 
