@@ -1,1 +1,1 @@
-{"hash": "6960dd4e-fa73-495f-9aa1-647aa6d90254", "name": "Terra", "tiles": {"0": {"location": [0, 0], "type": "grass\\forest.png", "label": "", "comments": ""}, "1": {"location": [0, 1], "type": "forest", "label": "", "comments": ""}}, "players": {"Soren": {"tileId": "1", "color": "purple"}}}
+{"hash": "6d290685-7918-46bf-a4a5-ea78c2731d04", "name": "Terra", "tiles": {"0": {"location": [0, 0], "type": "grass\\forest.png", "label": "", "comments": ""}}, "players": {"Soren": {"tileId": "0", "color": "red"}}}

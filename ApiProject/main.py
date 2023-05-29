@@ -56,7 +56,7 @@ async def create_tile(mapName: str, x: int, y:int, type: str, id: int, hash: str
                 if mapData["tiles"][tile]["location"][0] == x and mapData["tiles"][tile]["location"][1] == y:
                     return {"message": "This tile already exists."}
             mapData["hash"] = str(uuid.uuid4())
-            mapData["tiles"][id] = {"location": [x, y], "type": type, "label": "", "comments": ""}
+            mapData["tiles"][id] = {"location": [x, y], "type": type.replace("_", "\\"), "label": "", "comments": ""}
             os.remove("maps/" + mapName + ".json")
             with open("maps/" + mapName + ".json", "x") as outfile:
                 json.dump(mapData, outfile)
@@ -86,7 +86,7 @@ async def append_label(mapName: str, id: str, label: str):
 
 
 @app.post("/map/{mapName}/comments/{id}/{comments}", status_code=201)
-async def append_label(mapName: str, id: str, comments: str):
+async def append_comments(mapName: str, id: str, comments: str):
     if os.path.isfile("maps/" + mapName + ".json"):
         with open("maps/" + mapName + ".json") as mapJsonFile:
             mapData = json.load(mapJsonFile)

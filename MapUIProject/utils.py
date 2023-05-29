@@ -15,12 +15,22 @@ def setFonts():
     labelFont = pygame.font.SysFont("monospace", 30, bold=True)
 
 
-colors = {"desert": [(201, 173, 71), (232, 212, 139)],
-          "grass": [(83, 171, 79), (120, 207, 116)],
-          "ocean": [(41, 108, 217), (78, 131, 217)],
-          "snow": [(197, 206, 219), (255, 255, 255)],
-          "settlement": [(84, 84, 84), (120, 120, 120)],
-          "background": (53, 54, 58)}
+colors = {
+    "desert": [(201, 173, 71), (232, 212, 139)],
+    "grass": [(83, 171, 79), (120, 207, 116)],
+    "ocean": [(41, 108, 217), (78, 131, 217)],
+    "snow": [(197, 206, 219), (255, 255, 255)],
+    "settlement": [(84, 84, 84), (120, 120, 120)],
+    "background": (53, 54, 58),
+    "red": (255, 0, 0),
+    "orange": (255, 98, 0),
+    "yellow": (255, 255, 0),
+    "green": (0, 255, 0),
+    "lightblue": (0, 255, 255),
+    "blue": (0, 0, 255),
+    "purple": (119, 0, 255),
+    "pink": (255, 0, 255)
+}
 
 tilePaths = glob.glob("tiles\\used/*/*.png")
 for i in range(0, len(tilePaths)):

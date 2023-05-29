@@ -10,6 +10,7 @@ import utils
 
 
 from tile import Tile
+from player import Player
 
 ipAddress = "192.168.1.22:8000"
 mapName = sys.argv[1]
@@ -100,9 +101,11 @@ for tile in mapData["tiles"]:
         if n is not None:
             n.add_neighbour(toAppend)
     Ms.append(toAppend)
+Ps = []
+for player in mapData["players"]:
+    Ps.append(Player(player, mapData["players"][player]["tileId"], mapData["players"][player]["color"]))
 
 center(Ms, camera)
-
 
 while True:
     leftClick = False
@@ -169,6 +172,9 @@ while True:
                         if n is not None:
                             n.add_neighbour(toAppend)
                     Ms.append(toAppend)
+                Ps = []
+                for player in mapData["players"]:
+                    Ps.append(Player(player, mapData["players"][player]["tileId"], mapData["players"][player]["color"]))
 
     DISPLAY_SURF.fill(utils.colors["background"])
     BsBoxes = []
@@ -292,6 +298,9 @@ while True:
                                 if n is not None:
                                     n.add_neighbour(toAppend)
                             Ms.append(toAppend)
+                        Ps = []
+                        for player in mapData["players"]:
+                            Ps.append(Player(player, mapData["players"][player]["tileId"], mapData["players"][player]["color"]))
                         mapData = ast.literal_eval(requests.post("http://" + ipAddress +
                                                                  "/map/" + sys.argv[1] +
                                                                  "/tile/" + str(toAppend.loc[0]) +
@@ -308,22 +317,6 @@ while True:
                             if n is not None:
                                 n.add_neighbour(toAppend)
                         Ms.append(toAppend)
-
-        lowestX = 10000
-        highestX = -10000
-        for b in Ms:
-            if lowestX > b.loc[0]:
-                lowestX = b.loc[0]
-            if highestX < b.loc[0]:
-                highestX = b.loc[0]
-        for i in range(lowestX, highestX + 1):
-            for b in Ms:
-                if b.loc[0] == i:
-                    rect = b.render(DISPLAY_SURF, camera)
-        for i in range(lowestX, highestX + 1):
-            for b in Ms:
-                if b.loc[0] == i:
-                    rect = b.renderLabels(DISPLAY_SURF, camera)
 
     else:
 
@@ -355,48 +348,68 @@ while True:
                 else:
                     currentFocusTile = None
 
-        lowestX = 10000
-        highestX = -10000
+    lowestX = 10000
+    highestX = -10000
+    for b in Ms:
+        if lowestX > b.loc[0]:
+            lowestX = b.loc[0]
+        if highestX < b.loc[0]:
+            highestX = b.loc[0]
+    for i in range(lowestX, highestX + 1):
         for b in Ms:
-            if lowestX > b.loc[0]:
-                lowestX = b.loc[0]
-            if highestX < b.loc[0]:
-                highestX = b.loc[0]
-        for i in range(lowestX, highestX + 1):
-            for b in Ms:
-                if b.loc[0] == i:
-                    rect = b.render(DISPLAY_SURF, camera, currentFocusTile == b)
-        for i in range(lowestX, highestX + 1):
-            for b in Ms:
-                if b.loc[0] == i:
-                    rect = b.renderLabels(DISPLAY_SURF, camera)
+            if b.loc[0] == i:
+                if placementMode:
+                    b.render(DISPLAY_SURF, camera)
+                else:
+                    b.render(DISPLAY_SURF, camera, currentFocusTile == b)
+    for i in range(lowestX, highestX + 1):
+        for b in Ms:
+            if b.loc[0] == i:
+                playersInLocation = []
+                for p in Ps:
+                    if p.loc == b.id:
+                        playersInLocation.append(p)
+                for j in reversed(range(len(playersInLocation))):
+                    playersInLocation[j].render(DISPLAY_SURF, camera, Ms, j + 1)
+    for i in range(lowestX, highestX + 1):
+        for b in Ms:
+            if b.loc[0] == i:
+                b.renderLabels(DISPLAY_SURF, camera)
 
-    if currentFocusTile is not None:
-        x = currentFocusTile.loc[0]
-        y = currentFocusTile.loc[1]
-        if not utils.vertical:
-            x, y = y, -x
-        text = [
-            "Tile ID: " + str(currentFocusTile.id),
-            "X: " + str(x) + ", Y:" + str(y),
-            "Type: " + str(currentFocusTile.type),
-            "Label: " + currentFocusTile.label,
-            "",
-            "Comments: "
-        ]
-        wrapper = textwrap.TextWrapper(width=30)
-        wrappedComments = wrapper.wrap(currentFocusTile.comments)
-        text = text + wrappedComments
+    if not placementMode:
+        if currentFocusTile is not None:
+            x = currentFocusTile.loc[0]
+            y = currentFocusTile.loc[1]
+            if not utils.vertical:
+                x, y = y, -x
+            text = [
+                "Tile ID: " + str(currentFocusTile.id),
+                "X: " + str(x) + ", Y:" + str(y),
+                "Type: " + str(currentFocusTile.type),
+                "Label: " + currentFocusTile.label,
+                "",
+                "Players:"
+            ]
 
-        barWidth, fontHeight = utils.infoFont.size(text[0])
-        fullText = text[0]
-        for i in range(1, len(text)):
-            w = utils.infoFont.size(text[i])[0]
-            if w > barWidth:
-                barWidth = w
-        utils.addAlphaRect(DISPLAY_SURF, 0, 0, barWidth + 40, screensize[1], (40, 40, 40), 160)
-        for i in range(len(text)):
-            utils.addText(DISPLAY_SURF, text[i], 20, 20 + (i * fontHeight), utils.infoFont, (255, 255, 255))
+            for p in Ps:
+                if p.loc == currentFocusTile.id:
+                    text.append(p.name)
+
+            text.append("")
+            text.append("Comments: ")
+            wrapper = textwrap.TextWrapper(width=30)
+            wrappedComments = wrapper.wrap(currentFocusTile.comments)
+            text = text + wrappedComments
+
+            barWidth, fontHeight = utils.infoFont.size(text[0])
+            fullText = text[0]
+            for i in range(1, len(text)):
+                w = utils.infoFont.size(text[i])[0]
+                if w > barWidth:
+                    barWidth = w
+            utils.addAlphaRect(DISPLAY_SURF, 0, 0, barWidth + 40, screensize[1], (40, 40, 40), 160)
+            for i in range(len(text)):
+                utils.addText(DISPLAY_SURF, text[i], 20, 20 + (i * fontHeight), utils.infoFont, (255, 255, 255))
 
     if placementMode:
         utils.addAlphaRect(DISPLAY_SURF, screensize[0] - 550, screensize[1] - 140, 550, 140, (40, 40, 40), 160)
