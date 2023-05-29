@@ -1,5 +1,6 @@
 import pygame
 import glob
+import csv
 
 from tile import Tile
 from player import Player
@@ -38,13 +39,21 @@ colors = {
 tilePaths = glob.glob("tiles\\used/*/*.png")
 for i in range(0, len(tilePaths)):
     tilePaths[i] = tilePaths[i][len("tiles\\used\\"):]
-
 tiles = tilePaths
+
 palettes = []
 for tile in tiles:
     palettes.append(tile.split("\\")[0])
-
 palettes = list(dict.fromkeys(palettes))
+
+metadata = {}
+with open("tiles\\used\\tile_metadata.txt", "r", encoding="utf8") as fruits_file:
+    tsv_reader = csv.reader(fruits_file, delimiter="\t")
+    for row in tsv_reader:
+        (type, covered, height) = row
+        covered = covered == "True"
+        height = int(height)
+        metadata[type] = {"covered": covered, "height": height}
 
 vertical = False
 
@@ -156,7 +165,8 @@ def generate_neighbour_locs(loc):
 def find_tiles(locs, bs):
     ret = []
     for b in bs:
-        if b.loc in locs:
+        locAsTuple = (b.loc[0], b.loc[1])
+        if locAsTuple in locs:
             ret.append(b)
     return ret
 
@@ -170,8 +180,7 @@ def updateData(mapData):
         neighbours = find_tiles(generate_neighbour_locs(mapData["tiles"][tile]["location"]), Ms)
         toAppend.neighbours = neighbours
         for n in neighbours:
-            if n is not None:
-                n.add_neighbour(toAppend)
+            n.add_neighbour(toAppend)
         Ms.append(toAppend)
     Ps = []
     for player in mapData["players"]:

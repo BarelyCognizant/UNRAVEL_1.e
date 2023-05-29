@@ -167,6 +167,7 @@ async def create_player(mapName: str, name: str, id: str, color: str):
                     return mapData
         else:
             return {"message": "Tile does not exist."}
+    return {"message": "Map does not exist."}
 
 
 @app.put("/map/{mapName}/players/{name}/{id}", status_code=200)
@@ -188,3 +189,4 @@ async def move_player(mapName: str, name: str, id: str):
                 return {"message": "Player does not exist."}
         else:
             return {"message": "Tile does not exist."}
+    return {"message": "Map does not exist."}

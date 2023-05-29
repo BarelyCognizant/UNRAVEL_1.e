@@ -177,6 +177,54 @@ while True:
             if currentMapHash != mapData["hash"]:
                 currentMapHash, Ms, Ps = utils.updateData(mapData)
 
+    characterPerspective = "Soren"
+    if characterPerspective != "":
+        centerId = mapData["players"][characterPerspective]["tileId"]
+        centerTile = ""
+        for m in Ms:
+            m.visible = False
+            m.distance = -1
+            if m.id == centerId:
+                m.visible = True
+                m.distance = 0
+                centerTile = m
+        visionDistance = 2
+        for i in range(1, visionDistance + 1):
+            tilesToChange = []
+            for m in Ms:
+                if m.distance == -1:
+                    neighboursInView = []
+                    for n in m.neighbours:
+                        if n.visible:
+                            neighboursInView.append(n)
+                    minDistance = 1000
+                    for n in neighboursInView:
+                        if m.height > centerTile.height:
+                            if m.height > n.height:
+                                if centerTile.covered:
+                                    if not n.covered or n.distance == 0:
+                                        minDistance = min(n.distance + 1, minDistance)
+                                else:
+                                    minDistance = min(n.distance + 1, minDistance)
+                        else:
+                            if m.height >= n.height:
+                                if centerTile.covered:
+                                    if not n.covered or n.distance == 0:
+                                        minDistance = min(n.distance + 1, minDistance)
+                                else:
+                                    minDistance = min(n.distance + 1, minDistance)
+                            else:
+                                if m.height < centerTile.height:
+                                    minDistance = min(n.distance + 1, minDistance)
+                    if minDistance <= visionDistance:
+                        tilesToChange.append((m, minDistance))
+            for m in tilesToChange:
+                m[0].visible = True
+                m[0].distance = m[1]
+    else:
+        for m in Ms:
+            m.visible = True
+
     DISPLAY_SURF.fill(utils.colors["background"])
     BsBoxes = []
     lowestX = 10000
@@ -400,7 +448,8 @@ while True:
                 if placementMode:
                     b.render(DISPLAY_SURF, camera)
                 else:
-                    b.render(DISPLAY_SURF, camera, currentFocusTile == b)
+                    if b.visible:
+                        b.render(DISPLAY_SURF, camera, currentFocusTile == b)
     for i in range(lowestX, highestX + 1):
         for b in Ms:
             if b.loc[0] == i:
