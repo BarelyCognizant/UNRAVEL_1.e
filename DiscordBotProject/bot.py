@@ -122,18 +122,17 @@ async def roll(ctx, *args):
 # Movement
 move_help = "Moves a given player based on the parameters \n " \
             "Player: the player to move \n" \
-            "Direction: NW, N, NE, SE, S, SW, set ;(this is not case sensitive)" \
-            "Optional: TileID ; The tile to set a player to if the set direction is chosen"
+            "Direction: NW, N, NE, SE, S, SW, <TileID> ;(this is not case sensitive)" \
+            "TileID: The tile to set a player to if the set direction is chosen"
 
 
 @bot.command(name="move", help=move_help)
 @commands.has_role("gremlin")
-async def move(ctx, player, direction, tile_id=None):
-    if direction.lower() == "set" and tile_id:
-        await ctx.send(server_map.botMove(tile_id, player))
+async def move(ctx, player, direction):
+    if direction.isnumeric():
+        await ctx.send(server_map.botMove(int(direction), player))
     else:
         await ctx.send(server_map.move_direction(player, direction.upper()))
-
 
 
 # Testing
