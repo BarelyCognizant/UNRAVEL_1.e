@@ -37,17 +37,26 @@ async def test(ctx):
     await ctx.send("test")
 
 
-@bot.command(name="createPlayer", help="Create an Empty Player with name Name")
+@bot.command(name="createPlayer", help="Create an Player with a given name \n name: name")
 @commands.has_role("bot_tester")
 async def add_new_player(ctx, name):
     await ctx.send(csh.add_new_player(name))
 
 
-@bot.command(name="viewPlayer", help="view a given player's character sheet")
+@bot.command(name="viewPlayer", help="View a given player's character sheet \n name: the name of the player to view")
 @commands.has_role("bot_tester")
 async def view_player(ctx, name):
-    char_sheet = csh.get_player(name).get_player_desc()
-    await ctx.send(char_sheet)
+    player = csh.get_player(name)
+    if player is not None:
+        await ctx.send(player.get_player_desc())
+    else:
+        await ctx.send("No player exists with that name")
+
+
+@bot.command(name="inventory", help="View a given player's character sheet \n name: the name of the player to view")
+@commands.has_role("bot_tester")
+async def test(ctx):
+    await ctx.send("test")
 
 
 def start_bot():
