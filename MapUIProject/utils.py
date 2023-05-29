@@ -1,6 +1,20 @@
 import pygame
 import glob
 
+infoFont = ""
+controlFont = ""
+labelFont = ""
+
+
+def setFonts():
+    global infoFont
+    global controlFont
+    global labelFont
+    infoFont = pygame.font.SysFont("monospace", 30)
+    controlFont = pygame.font.SysFont("monospace", 60)
+    labelFont = pygame.font.SysFont("monospace", 30, bold=True)
+
+
 colors = {"desert": [(201, 173, 71), (232, 212, 139)],
           "grass": [(83, 171, 79), (120, 207, 116)],
           "ocean": [(41, 108, 217), (78, 131, 217)],
@@ -15,6 +29,7 @@ for i in range(0, len(tilePaths)):
 tiles = tilePaths
 
 vertical = False
+
 
 def getHexagon(x, y, w):
     if vertical:
@@ -75,6 +90,17 @@ def drawCell(surface, camera, x, y, color):
         x, y = y, x
     rect = pygame.draw.polygon(surface, color, getHexagon(x, y, camera["scale"]))
     return rect
+
+
+def drawLabel(surface, camera, x, y, label):
+    if (y % 2) == 0:
+        x = x + 0.5
+    x = (x * camera["scale"]) + camera["ox"]
+    y = (y * camera["scale"] * 0.866) + camera["oy"]
+    if not vertical:
+        x, y = y, x
+    w = labelFont.size(label)[0]
+    addText(surface, label, x - (w / 2), y + 20, labelFont, (255, 255, 255))
 
 
 def screenToCameraTransform(p, camera):

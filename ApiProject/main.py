@@ -16,7 +16,9 @@ async def create_map_object(mapName: str):
         "tiles": {
             0: {
                 "location": (0, 0),
-                "type": "grass\\forest.png"
+                "type": "grass\\forest.png",
+                "label": "",
+                "comments": ""
             }
         }
     }
@@ -44,7 +46,7 @@ async def delete_map_object(mapName: str):
 
 
 @app.post("/map/{mapName}/tile/{x}/{y}/{type}/{id}/{hash}", status_code=201)
-async def create_map_object(mapName: str, x: int, y:int, type: str, id: int, hash: str):
+async def create_tile(mapName: str, x: int, y:int, type: str, id: int, hash: str):
     if os.path.isfile("maps/" + mapName + ".json"):
         with open("maps/" + mapName + ".json") as mapJsonFile:
             mapData = json.load(mapJsonFile)
@@ -53,7 +55,7 @@ async def create_map_object(mapName: str, x: int, y:int, type: str, id: int, has
                 if mapData["tiles"][tile]["location"][0] == x and mapData["tiles"][tile]["location"][1] == y:
                     return {"message": "This tile already exists."}
             mapData["hash"] = str(uuid.uuid4())
-            mapData["tiles"][id] = {"location": [x, y], "type": type}
+            mapData["tiles"][id] = {"location": [x, y], "type": type, "label": "", "comments": ""}
             os.remove("maps/" + mapName + ".json")
             with open("maps/" + mapName + ".json", "x") as outfile:
                 json.dump(mapData, outfile)
@@ -62,3 +64,40 @@ async def create_map_object(mapName: str, x: int, y:int, type: str, id: int, has
             return {"message": "Map has change since your last pull. Sync and request again."}
     return {"message": "Map does not exist."}
 
+
+@app.post("/map/{mapName}/label/{id}/{label}", status_code=201)
+async def append_label(mapName: str, id: str, label: str):
+    if os.path.isfile("maps/" + mapName + ".json"):
+        with open("maps/" + mapName + ".json") as mapJsonFile:
+            mapData = json.load(mapJsonFile)
+        if id in mapData["tiles"]:
+            for tile in mapData["tiles"]:
+                if tile == id:
+                    mapData["hash"] = str(uuid.uuid4())
+                    mapData["tiles"][tile]["label"] = label
+                    os.remove("maps/" + mapName + ".json")
+                    with open("maps/" + mapName + ".json", "x") as outfile:
+                        json.dump(mapData, outfile)
+                    return mapData
+        else:
+            return {"message": "Tile does not exist."}
+    return {"message": "Map does not exist."}
+
+
+@app.post("/map/{mapName}/comments/{id}/{comments}", status_code=201)
+async def append_label(mapName: str, id: str, comments: str):
+    if os.path.isfile("maps/" + mapName + ".json"):
+        with open("maps/" + mapName + ".json") as mapJsonFile:
+            mapData = json.load(mapJsonFile)
+        if id in mapData["tiles"]:
+            for tile in mapData["tiles"]:
+                if tile == id:
+                    mapData["hash"] = str(uuid.uuid4())
+                    mapData["tiles"][tile]["comments"] = comments
+                    os.remove("maps/" + mapName + ".json")
+                    with open("maps/" + mapName + ".json", "x") as outfile:
+                        json.dump(mapData, outfile)
+                    return mapData
+        else:
+            return {"message": "Tile does not exist."}
+    return {"message": "Map does not exist."}

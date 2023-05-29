@@ -1,12 +1,12 @@
 import ctypes
-
 import pygame
-import utils
 import sys
 from pygame.locals import *
 import math
 import requests
 import ast
+import textwrap
+import utils
 
 
 from tile import Tile
@@ -50,6 +50,7 @@ def center(bs, camera):
 
 
 pygame.init()
+utils.setFonts()
 FPS = 60
 FramePerSec = pygame.time.Clock()
 
@@ -69,10 +70,6 @@ class Button:
         else:
             return False
 
-
-infoFont = pygame.font.SysFont("monospace", 30)
-controlFont = pygame.font.SysFont("monospace", 60)
-symbolFont = pygame.font.SysFont("monospace", 30)
 
 buttons = []
 
@@ -96,7 +93,7 @@ mapData = ast.literal_eval(requests.get("http://" + ipAddress + "/map/" + sys.ar
 currentMapHash = mapData["hash"]
 Ms = []
 for tile in mapData["tiles"]:
-    toAppend = Tile(mapData["tiles"][tile]["location"], mapData["tiles"][tile]["type"], tile)
+    toAppend = Tile(mapData["tiles"][tile]["location"], mapData["tiles"][tile]["type"], tile, mapData["tiles"][tile]["label"], mapData["tiles"][tile]["comments"])
     neighbours = utils.find_tiles(utils.generate_neighbour_locs(mapData["tiles"][tile]["location"]), Ms)
     toAppend.neighbours = neighbours
     for n in neighbours:
@@ -165,7 +162,7 @@ while True:
                 currentMapHash = mapData["hash"]
                 Ms = []
                 for tile in mapData["tiles"]:
-                    toAppend = Tile(mapData["tiles"][tile]["location"], mapData["tiles"][tile]["type"], tile)
+                    toAppend = Tile(mapData["tiles"][tile]["location"], mapData["tiles"][tile]["type"], tile, mapData["tiles"][tile]["label"], mapData["tiles"][tile]["comments"])
                     neighbours = utils.find_tiles(utils.generate_neighbour_locs(mapData["tiles"][tile]["location"]), Ms)
                     toAppend.neighbours = neighbours
                     for n in neighbours:
@@ -279,7 +276,6 @@ while True:
                                                          "/" + toAppend.type +
                                                          "/" + str(toAppend.id) +
                                                          "/" + currentMapHash).text)
-                print(mapData)
                 if "message" in mapData and mapData["message"] == "This tile already exists.":
                     print("tile already there")
                 else:
@@ -288,7 +284,7 @@ while True:
                         currentMapHash = mapData["hash"]
                         Ms = []
                         for tile in mapData["tiles"]:
-                            toAppend = Tile(mapData["tiles"][tile]["location"], mapData["tiles"][tile]["type"], tile)
+                            toAppend = Tile(mapData["tiles"][tile]["location"], mapData["tiles"][tile]["type"], tile, mapData["tiles"][tile]["label"], mapData["tiles"][tile]["comments"])
                             neighbours = utils.find_tiles(
                                 utils.generate_neighbour_locs(mapData["tiles"][tile]["location"]), Ms)
                             toAppend.neighbours = neighbours
@@ -324,6 +320,10 @@ while True:
             for b in Ms:
                 if b.loc[0] == i:
                     rect = b.render(DISPLAY_SURF, camera)
+        for i in range(lowestX, highestX + 1):
+            for b in Ms:
+                if b.loc[0] == i:
+                    rect = b.renderLabels(DISPLAY_SURF, camera)
 
     else:
 
@@ -366,35 +366,48 @@ while True:
             for b in Ms:
                 if b.loc[0] == i:
                     rect = b.render(DISPLAY_SURF, camera, currentFocusTile == b)
+        for i in range(lowestX, highestX + 1):
+            for b in Ms:
+                if b.loc[0] == i:
+                    rect = b.renderLabels(DISPLAY_SURF, camera)
 
     if currentFocusTile is not None:
         x = currentFocusTile.loc[0]
         y = currentFocusTile.loc[1]
         if not utils.vertical:
             x, y = y, -x
-        text = ["Tile ID: " + str(currentFocusTile.id),
-                "X: " + str(x) + ", Y:" + str(y),
-                "Type: " + str(currentFocusTile.type)]
-        barWidth, fontHeight = infoFont.size(text[0])
+        text = [
+            "Tile ID: " + str(currentFocusTile.id),
+            "X: " + str(x) + ", Y:" + str(y),
+            "Type: " + str(currentFocusTile.type),
+            "Label: " + currentFocusTile.label,
+            "",
+            "Comments: "
+        ]
+        wrapper = textwrap.TextWrapper(width=30)
+        wrappedComments = wrapper.wrap(currentFocusTile.comments)
+        text = text + wrappedComments
+
+        barWidth, fontHeight = utils.infoFont.size(text[0])
         fullText = text[0]
         for i in range(1, len(text)):
-            w = infoFont.size(text[i])[0]
+            w = utils.infoFont.size(text[i])[0]
             if w > barWidth:
                 barWidth = w
         utils.addAlphaRect(DISPLAY_SURF, 0, 0, barWidth + 40, screensize[1], (40, 40, 40), 160)
         for i in range(len(text)):
-            utils.addText(DISPLAY_SURF, text[i], 20, 20 + (i * fontHeight), infoFont, (255, 255, 255))
+            utils.addText(DISPLAY_SURF, text[i], 20, 20 + (i * fontHeight), utils.infoFont, (255, 255, 255))
 
     if placementMode:
         utils.addAlphaRect(DISPLAY_SURF, screensize[0] - 550, screensize[1] - 140, 550, 140, (40, 40, 40), 160)
-        w = controlFont.size(utils.tiles[currentSelectionIndex])[0]
+        w = utils.controlFont.size(utils.tiles[currentSelectionIndex])[0]
         if utils.vertical:
             pygame.draw.polygon(DISPLAY_SURF, utils.colors[utils.tiles[currentSelectionIndex].split("\\")[0]][0], utils.getHexagon(screensize[0] - 70, screensize[1] - 70, camera["scale"]))
         else:
             image = pygame.image.load("tiles/used/" + utils.tiles[currentSelectionIndex])
             image = pygame.transform.scale(image, (image.get_width() * 3.0, image.get_height() * 3.0))
             DISPLAY_SURF.blit(image, (screensize[0] - 70 - camera["scale"] * 0.5, screensize[1] - 70 - camera["scale"]))
-        utils.addText(DISPLAY_SURF, utils.tiles[currentSelectionIndex], screensize[0] - 140 - w, screensize[1] - 100, controlFont,
+        utils.addText(DISPLAY_SURF, utils.tiles[currentSelectionIndex], screensize[0] - 140 - w, screensize[1] - 100, utils.controlFont,
                       (255, 255, 255))
 
     pygame.display.update()
