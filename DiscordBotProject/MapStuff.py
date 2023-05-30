@@ -1,12 +1,14 @@
-import ast, requests
+import ast
+import requests
 
 
 # Online Python - IDE, Editor, Compiler, Interpreter
 
 
-class MapStuff:
-    ipAddress = "https://b112-2a0e-cb01-2d-2e00-18c7-6c1f-9246-110d.ngrok-free.app";
-    mapData = ast.literal_eval(requests.get(ipAddress + "/map/Terra").text)
+class Map:
+    def __init__(self, ip_address="https://b112-2a0e-cb01-2d-2e00-18c7-6c1f-9246-110d.ngrok-free.app"):
+        self.ipAddress = ip_address
+        self.mapData = ast.literal_eval(requests.get(self.ipAddress + "/map/Terra").text)
 
     def updateMap(self):
         self.mapData = ast.literal_eval(requests.get(self.ipAddress + "/map/Terra").text)  # 192.168.1.22
@@ -55,7 +57,9 @@ class MapStuff:
     # botMove is not properly implemented in terms of validation
     def botMove(self, tileID, Player):
         self.updateMap()
-        ast.literal_eval(requests.put(self.ipAddress + "/map/Terra/players/" + str(Player) + "/" + str(tileID)).text)
+        r = ast.literal_eval(requests.put(
+            self.ipAddress + "/map/Terra/players/" + str(Player) + "/" + str(tileID)).text)
+        return r["message"] if "message" in r else "Player successfully moved"
 
     def N(self, Player):
         self.updateMap()
@@ -99,3 +103,62 @@ class MapStuff:
             return self.move(X, Y + 1, Player)
         else:
             return self.move(X + 1, Y + 1, Player)
+
+    def move_direction(self, player, direction):
+        if direction == "N":
+            return self.N(player)
+        elif direction == "NW":
+            return self.NW(player)
+        elif direction == "NE":
+            return self.NE(player)
+        elif direction == "S":
+            return self.S(player)
+        elif direction == "SW":
+            return self.SW(player)
+        elif direction == "SE":
+            return self.SE(player)
+        else:
+            return "Impossible direction provided. Valid directions: NW, N, NE, SE, S, SW"
+
+    def set_label(self, tile_id, label):
+        r = ast.literal_eval(requests.post(
+            self.ipAddress + "/map/Terra/label/" + tile_id + "/" + label).text)
+        return r["message"] if "message" in r else "Label successfully set"
+
+    def delete_label(self, tile_id, label):
+        r = ast.literal_eval(requests.post(
+            self.ipAddress + "/map/Terra/label/" + tile_id).text)
+        return r["message"] if "message" in r else "Label successfully deleted"
+
+    def set_comments(self, tile_id, comments):
+        r = ast.literal_eval(requests.post(
+            self.ipAddress + "/map/Terra/comments/" + tile_id + "/" + comments).text)
+        return r["message"] if "message" in r else "Comment successfully set"
+
+    def delete_comments(self, tile_id):
+        r = ast.literal_eval(requests.post(
+            self.ipAddress + "/map/Terra/comments/" + tile_id).text)
+        return r["message"] if "message" in r else "Comment successfully deleted"
+
+    def append_comments(self, tile_id, comments):
+        r = ast.literal_eval(requests.put(
+            self.ipAddress + "/map/Terra/comments/" + tile_id + "/" + comments).text)
+        return r["message"] if "message" in r else "Comment successfully updated"
+
+    def add_player(self, tile_id, name, color):
+        r = ast.literal_eval(requests.post(
+            self.ipAddress + "/map/Terra/players/" + name + "/" + tile_id + "/" + color).text)
+        return r["message"] if "message" in r else "Player successfully added"
+
+
+# Valid Colors Hardcoded from the Map UI
+def is_valid_color(color):
+    colors = {"red": (255, 0, 0),
+              "orange": (255, 98, 0),
+              "yellow": (255, 255, 0),
+              "green": (0, 255, 0),
+              "lightblue": (0, 255, 255),
+              "blue": (0, 0, 255),
+              "purple": (119, 0, 255),
+              "pink": (255, 0, 255)}
+    return color in colors

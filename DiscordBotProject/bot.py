@@ -5,9 +5,11 @@ import discord
 from dotenv import load_dotenv
 from discord.ext import commands
 
+import MapStuff
 import character_sheet_handler as csh
 import server
 from dice import roll_dice
+from MapStuff import Map
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -17,12 +19,14 @@ bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
 
 status_channel = None
 player_channels = []
+server_map = None
 
 
 @bot.event
 async def on_ready():
     global status_channel
     global player_channels
+    global server_map
     guild = discord.utils.get(bot.guilds, name=GUILD)
     print(
         f'{bot.user} is connected to the following guild:\n'
@@ -40,17 +44,16 @@ async def on_ready():
     server.load_gremlins(gremlins)
     server.load_messages()
 
+    server_map = Map("http://192.168.1.22:8000")
+
+
+# Permissions
+
 
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.errors.CheckFailure):
         await ctx.send('You do not have the correct role for this command.')
-
-
-@bot.command(name="test", help="test")
-@commands.has_role("bot_tester")
-async def test(ctx):
-    await ctx.send("test")
 
 
 # Character Sheet
@@ -88,7 +91,7 @@ async def logout_gremlin(ctx):
 # Server Messages
 
 @bot.command(name="serverMessage", help="Sends a server message, or uses a previously stored shorthand \n Options: all")
-@commands.has_role("bot_tester")
+@commands.has_role("gremlin")
 async def server_message(ctx, message, option=None, name=None):
     if option == "all":
         for channel in player_channels:
@@ -117,8 +120,58 @@ async def roll(ctx, *args):
     await ctx.send(message)
 
 
+# Movement / Map API
+move_help = "Moves a given player based on the parameters \n " \
+            "Player: the player to move \n" \
+            "Direction: NW, N, NE, SE, S, SW, <TileID> ;(this is not case sensitive)" \
+            "TileID: The tile to set a player to if the set direction is chosen"
+
+
+@bot.command(name="move", help=move_help)
+@commands.has_role("gremlin")
+async def move(ctx, *args):
+    player = args[0]
+    directions = args[1:]
+    if player and directions:
+        for direction in directions:
+            print(player)
+            print(direction)
+            if direction.isnumeric():
+                await ctx.send(server_map.botMove(int(direction), player))
+            else:
+                await ctx.send(server_map.move_direction(player, direction.upper()))
+    else:
+        await ctx.send("Incorrect parameters given, please see !help command")
+
+
+@bot.command(name="map", help="Allows Editing of the Map")
+@commands.has_role("gremlin")
+async def test(ctx, option, tile, content, option2=None):
+    if option.lower() == "add" and MapStuff.is_valid_color(option2):
+        await ctx.send(server_map.add_player(tile, content, option))
+    elif option.lower() == "label":
+        if content == "delete":
+            await ctx.send(server_map.delete_label(tile, content))
+        else:
+            await ctx.send(server_map.set_label(tile, content))
+    elif option.lower() == "comment":
+        if content == "delete":
+            await ctx.send(server_map.delete_comments(tile))
+        elif option2 == "set":
+            await ctx.send(server_map.set_comments(tile, content))
+        else:
+            await ctx.send(server_map.append_comments(tile, content))
+    else:
+        return "Incorrect parameter given, please see !help command"
+
+
+# Testing
+
+@bot.command(name="test", help="test")
+@commands.has_role("bot_tester")
+async def test(ctx):
+    await ctx.send("test")
+
+
 def start_bot():
     bot.run(TOKEN)
-
-
-
