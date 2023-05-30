@@ -44,7 +44,7 @@ async def on_ready():
     server.load_gremlins(gremlins)
     server.load_messages()
 
-    server_map = Map()
+    server_map = Map("http://192.168.1.22:8000")
 
 
 # Permissions
@@ -129,11 +129,19 @@ move_help = "Moves a given player based on the parameters \n " \
 
 @bot.command(name="move", help=move_help)
 @commands.has_role("gremlin")
-async def move(ctx, player, direction):
-    if direction.isnumeric():
-        await ctx.send(server_map.botMove(int(direction), player))
+async def move(ctx, *args):
+    player = args[0]
+    directions = args[1:]
+    if player and directions:
+        for direction in directions:
+            print(player)
+            print(direction)
+            if direction.isnumeric():
+                await ctx.send(server_map.botMove(int(direction), player))
+            else:
+                await ctx.send(server_map.move_direction(player, direction.upper()))
     else:
-        await ctx.send(server_map.move_direction(player, direction.upper()))
+        await ctx.send("Incorrect parameters given, please see !help command")
 
 
 @bot.command(name="map", help="Allows Editing of the Map")
@@ -155,6 +163,7 @@ async def test(ctx, option, tile, content, option2=None):
             await ctx.send(server_map.append_comments(tile, content))
     else:
         return "Incorrect parameter given, please see !help command"
+
 
 # Testing
 
