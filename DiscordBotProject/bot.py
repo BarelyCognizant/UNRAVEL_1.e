@@ -5,6 +5,7 @@ import discord
 from dotenv import load_dotenv
 from discord.ext import commands
 
+import MapStuff
 import character_sheet_handler as csh
 import server
 from dice import roll_dice
@@ -137,13 +138,23 @@ async def move(ctx, player, direction):
 
 @bot.command(name="map", help="Allows Editing of the Map")
 @commands.has_role("gremlin")
-async def test(ctx, option, tile, content, color=None):
-    if option.lower() == "add" and color:
-        await ctx.send(server_map.add_player(tile, content, color))
+async def test(ctx, option, tile, content, option2=None):
+    if option.lower() == "add" and MapStuff.is_valid_color(option2):
+        await ctx.send(server_map.add_player(tile, content, option))
     elif option.lower() == "label":
-        await ctx.send(server_map.set_label(tile, content))
+        if content == "delete":
+            await ctx.send(server_map.delete_label(tile, content))
+        else:
+            await ctx.send(server_map.set_label(tile, content))
     elif option.lower() == "comment":
-        await ctx.send(server_map.set_comments(tile, content))
+        if content == "delete":
+            await ctx.send(server_map.delete_comments(tile))
+        elif option2 == "set":
+            await ctx.send(server_map.set_comments(tile, content))
+        else:
+            await ctx.send(server_map.append_comments(tile, content))
+    else:
+        return "Incorrect parameter given, please see !help command"
 
 # Testing
 

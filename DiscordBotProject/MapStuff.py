@@ -125,11 +125,40 @@ class Map:
             self.ipAddress + "/map/Terra/label/" + tile_id + "/" + label).text)
         return r["message"] if "message" in r else "Label successfully set"
 
+    def delete_label(self, tile_id, label):
+        r = ast.literal_eval(requests.post(
+            self.ipAddress + "/map/Terra/label/" + tile_id).text)
+        return r["message"] if "message" in r else "Label successfully deleted"
+
     def set_comments(self, tile_id, comments):
         r = ast.literal_eval(requests.post(
-            self.ipAddress + "/map/Terra/comments/"+tile_id + "/" + comments).text)
+            self.ipAddress + "/map/Terra/comments/" + tile_id + "/" + comments).text)
         return r["message"] if "message" in r else "Comment successfully set"
+
+    def delete_comments(self, tile_id):
+        r = ast.literal_eval(requests.post(
+            self.ipAddress + "/map/Terra/comments/" + tile_id).text)
+        return r["message"] if "message" in r else "Comment successfully deleted"
+
+    def append_comments(self, tile_id, comments):
+        r = ast.literal_eval(requests.put(
+            self.ipAddress + "/map/Terra/comments/" + tile_id + "/" + comments).text)
+        return r["message"] if "message" in r else "Comment successfully updated"
+
     def add_player(self, tile_id, name, color):
         r = ast.literal_eval(requests.post(
             self.ipAddress + "/map/Terra/players/" + name + "/" + tile_id + "/" + color).text)
         return r["message"] if "message" in r else "Player successfully added"
+
+
+# Valid Colors Hardcoded from the Map UI
+def is_valid_color(color):
+    colors = {"red": (255, 0, 0),
+              "orange": (255, 98, 0),
+              "yellow": (255, 255, 0),
+              "green": (0, 255, 0),
+              "lightblue": (0, 255, 255),
+              "blue": (0, 0, 255),
+              "purple": (119, 0, 255),
+              "pink": (255, 0, 255)}
+    return color in colors
