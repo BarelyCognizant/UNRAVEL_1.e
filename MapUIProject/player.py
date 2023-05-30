@@ -1,5 +1,5 @@
 import pygame
-import utils
+import utils as utils
 
 
 class Player:
@@ -33,7 +33,7 @@ class Player:
             slot -= layer
         slot += layer
 
-        image = pygame.image.load("player_token.png")
+        image = pygame.image.load("..\\MapUIProject\\player_token.png")
         image = pygame.transform.scale(image, (image.get_width() * 0.05, image.get_height() * 0.05))
         image.fill(utils.colors[self.color], special_flags=pygame.BLEND_RGB_MULT)
         brighten = 20

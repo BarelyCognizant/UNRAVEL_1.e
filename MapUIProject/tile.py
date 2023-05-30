@@ -1,5 +1,5 @@
 import pygame
-import utils
+import utils as utils
 
 
 class Tile:
@@ -35,7 +35,7 @@ class Tile:
                 color = self.color[1]
             bounds = utils.drawCell(surface, camera, x, y, color)
         else:
-            image = pygame.image.load("tiles/used/" + self.type)
+            image = pygame.image.load("..\\MapUIProject\\tiles\\used\\" + self.type)
             if focus:
                 brighten = 30
                 image.fill((brighten, brighten, brighten), special_flags=pygame.BLEND_RGB_ADD)
