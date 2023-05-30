@@ -1,5 +1,6 @@
 import pygame
 import glob
+import csv
 
 from tile import Tile
 from player import Player
@@ -7,6 +8,8 @@ from player import Player
 infoFont = ""
 controlFont = ""
 labelFont = ""
+
+ipAddress = "192.168.1.22:8000"
 
 
 def setFonts():
@@ -35,16 +38,24 @@ colors = {
     "pink": (255, 0, 255)
 }
 
-tilePaths = glob.glob("tiles\\used/*/*.png")
+tilePaths = glob.glob("..\\MapUIProject\\tiles\\used/*/*.png")
 for i in range(0, len(tilePaths)):
-    tilePaths[i] = tilePaths[i][len("tiles\\used\\"):]
-
+    tilePaths[i] = tilePaths[i][len("..\\MapUIProject\\tiles\\used\\"):]
 tiles = tilePaths
+
 palettes = []
 for tile in tiles:
     palettes.append(tile.split("\\")[0])
-
 palettes = list(dict.fromkeys(palettes))
+
+metadata = {}
+with open("..\\MapUIProject\\tiles\\used\\tile_metadata.txt", "r", encoding="utf8") as metadata_file:
+    tsv_reader = csv.reader(metadata_file, delimiter="\t")
+    for row in tsv_reader:
+        (type, covered, height) = row
+        covered = covered == "True"
+        height = int(height)
+        metadata[type] = {"covered": covered, "height": height}
 
 vertical = False
 
@@ -82,7 +93,7 @@ def drawTile(surface, camera, x, y, image):
     y = (y * camera["scale"] * 0.866) + camera["oy"]
     if not vertical:
         x, y = y, x
-    image = pygame.transform.scale(image, (image.get_width() * 3.0, image.get_height() * 3.0))
+    image = pygame.transform.scale(image, (image.get_width() * 0.03 * camera["scale"], image.get_height() * 0.03 * camera["scale"]))
     rect = getRect(x, y, camera["scale"])
     surface.blit(image, (x - camera["scale"] * 0.5, y - camera["scale"]))
     return rect
@@ -156,7 +167,8 @@ def generate_neighbour_locs(loc):
 def find_tiles(locs, bs):
     ret = []
     for b in bs:
-        if b.loc in locs:
+        locAsTuple = (b.loc[0], b.loc[1])
+        if locAsTuple in locs:
             ret.append(b)
     return ret
 
@@ -170,8 +182,7 @@ def updateData(mapData):
         neighbours = find_tiles(generate_neighbour_locs(mapData["tiles"][tile]["location"]), Ms)
         toAppend.neighbours = neighbours
         for n in neighbours:
-            if n is not None:
-                n.add_neighbour(toAppend)
+            n.add_neighbour(toAppend)
         Ms.append(toAppend)
     Ps = []
     for player in mapData["players"]:

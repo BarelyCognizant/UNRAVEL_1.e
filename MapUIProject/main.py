@@ -6,13 +6,12 @@ import math
 import requests
 import ast
 import textwrap
-import utils
 
+import utils
+import renderer
 
 from tile import Tile
-from player import Player
 
-ipAddress = "192.168.1.22:8000"
 mapName = sys.argv[1]
 currentMapHash = ""
 
@@ -106,7 +105,7 @@ placementMode = False
 
 currentFocusTile = None
 
-mapData = ast.literal_eval(requests.get("http://" + ipAddress + "/map/" + sys.argv[1]).text)
+mapData = ast.literal_eval(requests.get("http://" + utils.ipAddress + "/map/" + sys.argv[1]).text)
 
 currentMapHash, Ms, Ps = utils.updateData(mapData)
 
@@ -173,7 +172,7 @@ while True:
             if event.key == pygame.K_p:
                 placementMode = not placementMode
         elif event.type == CHECKHASHEVENT:
-            mapData = ast.literal_eval(requests.get("http://" + ipAddress + "/map/" + sys.argv[1]).text)
+            mapData = ast.literal_eval(requests.get("http://" + utils.ipAddress + "/map/" + sys.argv[1]).text)
             if currentMapHash != mapData["hash"]:
                 currentMapHash, Ms, Ps = utils.updateData(mapData)
 
@@ -287,7 +286,7 @@ while True:
             toAppend = None
             if leftClick and edge:
                 toAppend = Tile(hoverPoint, utils.tiles[currentSelectionIndex], unique_id=mapData["idCount"])
-                mapData = ast.literal_eval(requests.post("http://" + ipAddress +
+                mapData = ast.literal_eval(requests.post("http://" + utils.ipAddress +
                                                          "/map/" + sys.argv[1] +
                                                          "/tile/" + str(toAppend.loc[0]) +
                                                          "/" + str(toAppend.loc[1]) +
@@ -298,9 +297,9 @@ while True:
                     print("tile already there")
                 else:
                     if "message" in mapData:
-                        mapData = ast.literal_eval(requests.get("http://" + ipAddress + "/map/" + sys.argv[1]).text)
+                        mapData = ast.literal_eval(requests.get("http://" + utils.ipAddress + "/map/" + sys.argv[1]).text)
                         currentMapHash, Ms, Ps = utils.updateData(mapData)
-                        mapData = ast.literal_eval(requests.post("http://" + ipAddress +
+                        mapData = ast.literal_eval(requests.post("http://" + utils.ipAddress +
                                                                  "/map/" + sys.argv[1] +
                                                                  "/tile/" + str(toAppend.loc[0]) +
                                                                  "/" + str(toAppend.loc[1]) +
@@ -323,7 +322,7 @@ while True:
                         empty = False
                         break
                 if empty:
-                    mapData = ast.literal_eval(requests.delete("http://" + ipAddress +
+                    mapData = ast.literal_eval(requests.delete("http://" + utils.ipAddress +
                                                              "/map/" + sys.argv[1] +
                                                              "/tile/" + str(hoverPoint.id) +
                                                              "/" + currentMapHash).text)
@@ -331,10 +330,10 @@ while True:
                         print("tile already gone")
                     else:
                         if "message" in mapData:
-                            mapData = ast.literal_eval(requests.get("http://" + ipAddress + "/map/" + sys.argv[1]).text)
+                            mapData = ast.literal_eval(requests.get("http://" + utils.ipAddress + "/map/" + sys.argv[1]).text)
 
                             currentMapHash, Ms, Ps = utils.updateData(mapData)
-                            mapData = ast.literal_eval(requests.delete("http://" + ipAddress +
+                            mapData = ast.literal_eval(requests.delete("http://" + utils.ipAddress +
                                                              "/map/" + sys.argv[1] +
                                                              "/tile/" + str(hoverPoint.id) +
                                                              "/" + currentMapHash).text)
@@ -342,7 +341,7 @@ while True:
                             currentMapHash, Ms, Ps = utils.updateData(mapData)
             elif leftClick and not edge:
                 newType = utils.tiles[currentSelectionIndex]
-                mapData = ast.literal_eval(requests.put("http://" + ipAddress +
+                mapData = ast.literal_eval(requests.put("http://" + utils.ipAddress +
                                                            "/map/" + sys.argv[1] +
                                                            "/tile/" + newType +
                                                            "/" + str(hoverPoint.id) +
@@ -351,10 +350,10 @@ while True:
                     print("tile already gone")
                 else:
                     if "message" in mapData:
-                        mapData = ast.literal_eval(requests.get("http://" + ipAddress + "/map/" + sys.argv[1]).text)
+                        mapData = ast.literal_eval(requests.get("http://" + utils.ipAddress + "/map/" + sys.argv[1]).text)
 
                         currentMapHash, Ms, Ps = utils.updateData(mapData)
-                        mapData = ast.literal_eval(requests.put("http://" + ipAddress +
+                        mapData = ast.literal_eval(requests.put("http://" + utils.ipAddress +
                                                                 "/map/" + sys.argv[1] +
                                                                 "/tile/" + newType +
                                                                 "/" + str(hoverPoint.id) +
@@ -387,33 +386,12 @@ while True:
             else:
                 currentFocusTile = None
 
-    lowestX = 10000
-    highestX = -10000
-    for b in Ms:
-        if lowestX > b.loc[0]:
-            lowestX = b.loc[0]
-        if highestX < b.loc[0]:
-            highestX = b.loc[0]
-    for i in range(lowestX, highestX + 1):
-        for b in Ms:
-            if b.loc[0] == i:
-                if placementMode:
-                    b.render(DISPLAY_SURF, camera)
-                else:
-                    b.render(DISPLAY_SURF, camera, currentFocusTile == b)
-    for i in range(lowestX, highestX + 1):
-        for b in Ms:
-            if b.loc[0] == i:
-                playersInLocation = []
-                for p in Ps:
-                    if p.loc == b.id:
-                        playersInLocation.append(p)
-                for j in reversed(range(len(playersInLocation))):
-                    playersInLocation[j].render(DISPLAY_SURF, camera, Ms, j + 1)
-    for i in range(lowestX, highestX + 1):
-        for b in Ms:
-            if b.loc[0] == i:
-                b.renderLabels(DISPLAY_SURF, camera)
+    characterPerspective = ""
+    if characterPerspective != "":
+        centerId = mapData["players"][characterPerspective]["tileId"]
+        renderer.render_perspective(DISPLAY_SURF, Ms, Ps, camera, centerId)
+    else:
+        renderer.render_full_screen(DISPLAY_SURF, Ms, Ps, camera, placementMode, currentFocusTile)
 
     if not placementMode:
         if currentFocusTile is not None:

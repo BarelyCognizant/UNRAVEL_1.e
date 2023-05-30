@@ -1,5 +1,5 @@
 import pygame
-import utils
+import utils as utils
 
 
 class Tile:
@@ -10,6 +10,8 @@ class Tile:
     neighbours = []
     label = ""
     comments = ""
+    covered = False
+    height = 0
 
     def __init__(self, location, type, unique_id=0, label="", comments=""):
         self.loc = location
@@ -18,6 +20,11 @@ class Tile:
         self.color = utils.colors[self.type.split("\\")[0]]
         self.label = label
         self.comments = comments
+        self.covered = utils.metadata[type]["covered"]
+        self.height = utils.metadata[type]["height"]
+        self.visible = False
+        self.distance = -1
+        self.neighbours = []
 
     def render(self, surface, camera, focus=False):
         x = self.loc[0]
@@ -28,7 +35,7 @@ class Tile:
                 color = self.color[1]
             bounds = utils.drawCell(surface, camera, x, y, color)
         else:
-            image = pygame.image.load("tiles/used/" + self.type)
+            image = pygame.image.load("..\\MapUIProject\\tiles\\used\\" + self.type)
             if focus:
                 brighten = 30
                 image.fill((brighten, brighten, brighten), special_flags=pygame.BLEND_RGB_ADD)

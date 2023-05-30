@@ -111,7 +111,7 @@ async def change_tile(mapName: str, type:str, id: str, hash: str):
 
 
 @app.post("/map/{mapName}/label/{id}/{label}", status_code=201)
-async def append_label(mapName: str, id: str, label: str):
+async def write_label(mapName: str, id: str, label: str):
     if os.path.isfile("maps/" + mapName + ".json"):
         with open("maps/" + mapName + ".json") as mapJsonFile:
             mapData = json.load(mapJsonFile)
@@ -129,8 +129,27 @@ async def append_label(mapName: str, id: str, label: str):
     return {"message": "Map does not exist."}
 
 
+@app.delete("/map/{mapName}/label/{id}", status_code=201)
+async def delete_label(mapName: str, id: str):
+    if os.path.isfile("maps/" + mapName + ".json"):
+        with open("maps/" + mapName + ".json") as mapJsonFile:
+            mapData = json.load(mapJsonFile)
+        if id in mapData["tiles"]:
+            for tile in mapData["tiles"]:
+                if tile == id:
+                    mapData["hash"] = str(uuid.uuid4())
+                    mapData["tiles"][tile]["label"] = ""
+                    os.remove("maps/" + mapName + ".json")
+                    with open("maps/" + mapName + ".json", "x") as outfile:
+                        json.dump(mapData, outfile)
+                    return mapData
+        else:
+            return {"message": "Tile does not exist."}
+    return {"message": "Map does not exist."}
+
+
 @app.post("/map/{mapName}/comments/{id}/{comments}", status_code=201)
-async def append_comments(mapName: str, id: str, comments: str):
+async def write_comments(mapName: str, id: str, comments: str):
     if os.path.isfile("maps/" + mapName + ".json"):
         with open("maps/" + mapName + ".json") as mapJsonFile:
             mapData = json.load(mapJsonFile)
@@ -139,6 +158,44 @@ async def append_comments(mapName: str, id: str, comments: str):
                 if tile == id:
                     mapData["hash"] = str(uuid.uuid4())
                     mapData["tiles"][tile]["comments"] = comments
+                    os.remove("maps/" + mapName + ".json")
+                    with open("maps/" + mapName + ".json", "x") as outfile:
+                        json.dump(mapData, outfile)
+                    return mapData
+        else:
+            return {"message": "Tile does not exist."}
+    return {"message": "Map does not exist."}
+
+
+@app.put("/map/{mapName}/comments/{id}/{comments}", status_code=201)
+async def append_comments(mapName: str, id: str, comments: str):
+    if os.path.isfile("maps/" + mapName + ".json"):
+        with open("maps/" + mapName + ".json") as mapJsonFile:
+            mapData = json.load(mapJsonFile)
+        if id in mapData["tiles"]:
+            for tile in mapData["tiles"]:
+                if tile == id:
+                    mapData["hash"] = str(uuid.uuid4())
+                    mapData["tiles"][tile]["comments"] = mapData["tiles"][tile]["comments"] + comments
+                    os.remove("maps/" + mapName + ".json")
+                    with open("maps/" + mapName + ".json", "x") as outfile:
+                        json.dump(mapData, outfile)
+                    return mapData
+        else:
+            return {"message": "Tile does not exist."}
+    return {"message": "Map does not exist."}
+
+
+@app.delete("/map/{mapName}/comments/{id}", status_code=201)
+async def delete_comments(mapName: str, id: str):
+    if os.path.isfile("maps/" + mapName + ".json"):
+        with open("maps/" + mapName + ".json") as mapJsonFile:
+            mapData = json.load(mapJsonFile)
+        if id in mapData["tiles"]:
+            for tile in mapData["tiles"]:
+                if tile == id:
+                    mapData["hash"] = str(uuid.uuid4())
+                    mapData["tiles"][tile]["comments"] = ""
                     os.remove("maps/" + mapName + ".json")
                     with open("maps/" + mapName + ".json", "x") as outfile:
                         json.dump(mapData, outfile)
@@ -167,6 +224,7 @@ async def create_player(mapName: str, name: str, id: str, color: str):
                     return mapData
         else:
             return {"message": "Tile does not exist."}
+    return {"message": "Map does not exist."}
 
 
 @app.put("/map/{mapName}/players/{name}/{id}", status_code=200)
@@ -188,3 +246,4 @@ async def move_player(mapName: str, name: str, id: str):
                 return {"message": "Player does not exist."}
         else:
             return {"message": "Tile does not exist."}
+    return {"message": "Map does not exist."}
