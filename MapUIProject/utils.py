@@ -8,6 +8,8 @@ from player import Player
 infoFont = ""
 controlFont = ""
 labelFont = ""
+cloudScale = 600
+weatherOn = True
 
 ipAddress = "192.168.1.22:8000"
 
@@ -56,6 +58,11 @@ with open("..\\MapUIProject\\tiles\\used\\tile_metadata.txt", "r", encoding="utf
         covered = covered == "True"
         height = int(height)
         metadata[type] = {"covered": covered, "height": height}
+
+dryClouds = []
+for i in range(1, 4):
+    dryClouds.append("..\\MapUIProject\\clouds\\dry\\cloud" + str(i) + ".png")
+
 
 vertical = False
 
@@ -121,6 +128,38 @@ def drawCell(surface, camera, x, y, color):
     return rect
 
 
+def drawCloud(surface, camera, x, y, image):
+    x = (x * (camera["scale"] + cloudScale)) + camera["ox"]
+    y = (y * (camera["scale"] + cloudScale) * 0.866) + camera["oy"]
+    x, y = y, x
+    image = pygame.transform.scale(image, (image.get_width() * 1.8, image.get_height() * 1.8))
+    surface.blit(image, (x - (image.get_width() / 2), y - (image.get_height() / 2)))
+
+
+_circle_cache = {}
+
+
+def circlePoints(r):
+    r = int(round(r))
+    if r in _circle_cache:
+        return _circle_cache[r]
+    x, y, e = r, 0, 1 - r
+    _circle_cache[r] = points = []
+    while x >= y:
+        points.append((x, y))
+        y += 1
+        if e < 0:
+            e += 2 * y - 1
+        else:
+            x -= 1
+            e += 2 * (y - x) - 1
+    points += [(y, x) for x, y in points if x > y]
+    points += [(-x, y) for x, y in points if x]
+    points += [(x, -y) for x, y in points if y]
+    points.sort()
+    return points
+
+
 def drawLabel(surface, camera, x, y, label, color):
     if (y % 2) == 0:
         x = x + 0.5
@@ -128,8 +167,27 @@ def drawLabel(surface, camera, x, y, label, color):
     y = (y * camera["scale"] * 0.866) + camera["oy"]
     if not vertical:
         x, y = y, x
-    w = labelFont.size(label)[0]
-    addText(surface, label, x - (w / 2), y + 20, labelFont, color)
+    width = labelFont.size(label)[0]
+
+    opx = 2
+    textsurface = labelFont.render(label, True, color).convert_alpha()
+    w = textsurface.get_width() + 2 * opx
+    h = labelFont.get_height()
+
+    osurf = pygame.Surface((w, h + 2 * opx)).convert_alpha()
+    osurf.fill((0, 0, 0, 0))
+
+    surf = osurf.copy()
+
+    osurf.blit(labelFont.render(label, True, (0, 0, 0)).convert_alpha(), (0, 0))
+
+    for dx, dy in circlePoints(opx):
+        surf.blit(osurf, (dx + opx, dy + opx))
+
+    surf.blit(textsurface, (opx, opx))
+
+    surface.blit(surf, (x - (width / 2), y + 20))
+    # addText(surface, label, x - (width / 2), y + 20, labelFont, color)
 
 
 def screenToCameraTransform(p, camera):

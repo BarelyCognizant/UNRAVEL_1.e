@@ -20,6 +20,7 @@ iterations = 0
 user32 = ctypes.windll.user32
 screensize = user32.GetSystemMetrics(0), (user32.GetSystemMetrics(1) - 80)
 
+weatherScroll = 0
 
 def distanceBetweenTwoPoints(A, B):
     return math.hypot(A[0] - B[0], A[1] - B[1])
@@ -111,6 +112,8 @@ currentMapHash, Ms, Ps = utils.updateData(mapData)
 
 center(Ms, camera)
 
+renderer.update_clouds(Ms, camera)
+
 while True:
     leftClick = False
     rightClick = False
@@ -171,6 +174,8 @@ while True:
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_p:
                 placementMode = not placementMode
+            if event.key == pygame.K_w:
+                utils.weatherOn = not utils.weatherOn
         elif event.type == CHECKHASHEVENT:
             mapData = ast.literal_eval(requests.get("http://" + utils.ipAddress + "/map/" + sys.argv[1]).text)
             if currentMapHash != mapData["hash"]:
@@ -315,6 +320,7 @@ while True:
                             if n is not None:
                                 n.add_neighbour(toAppend)
                         Ms.append(toAppend)
+                renderer.update_clouds(Ms, camera)
             elif rightClick and not edge:
                 empty = True
                 for p in Ps:
@@ -339,6 +345,7 @@ while True:
                                                              "/" + currentMapHash).text)
                         if "message" not in mapData:
                             currentMapHash, Ms, Ps = utils.updateData(mapData)
+                renderer.update_clouds(Ms, camera)
             elif leftClick and not edge:
                 newType = utils.tiles[currentSelectionIndex]
                 mapData = ast.literal_eval(requests.put("http://" + utils.ipAddress +
@@ -391,7 +398,8 @@ while True:
         centerId = mapData["players"][characterPerspective]["tileId"]
         renderer.render_perspective(DISPLAY_SURF, Ms, Ps, camera, centerId)
     else:
-        renderer.render_full_screen(DISPLAY_SURF, Ms, Ps, camera, placementMode, currentFocusTile)
+        renderer.render_full_screen(DISPLAY_SURF, Ms, Ps, camera, placementMode, currentFocusTile, mapData["weather"]["seed"], weatherScroll)
+        weatherScroll += 0.002
 
     if not placementMode:
         if currentFocusTile is not None:

@@ -1,5 +1,8 @@
+import random
+
 import pygame
 import utils as utils
+import math
 
 
 class Tile:
@@ -15,6 +18,8 @@ class Tile:
     remembered = False
     rType = ""
     rLabel = ""
+    weather = 0.0
+    cloudPoints = []
 
     def __init__(self, location, type, unique_id=0, label="", comments=""):
         self.loc = location
@@ -52,6 +57,36 @@ class Tile:
                 bounds = utils.drawTile(surface, camera, x, y, image)
 
         return bounds
+
+    def setWeather(self, weatherValue):
+        if weatherValue < -0.2:
+            if self.type.split("\\")[0] == "snow":
+                self.weather = "SNOW"
+            else:
+                self.weather = "RAIN"
+        elif weatherValue < -0.05:
+            self.weather = "CLOUD"
+        else:
+            self.weather = "CLEAR"
+
+    def renderWeather(self, surface, camera):
+        for point in self.cloudPoints:
+            x = point[0]
+            y = point[1]
+            r = math.floor(random.random() * 3.0)
+            image = pygame.image.load(utils.dryClouds[r])
+            image.fill((255, 255, 255, 150 + (random.random() * 100.0)), special_flags=pygame.BLEND_RGBA_MIN)
+            if self.visible:
+                if self.weather == "SNOW":
+                    brighten = 100
+                    image.fill((brighten, brighten, brighten), special_flags=pygame.BLEND_RGB_SUB)
+                    utils.drawCloud(surface, camera, x, y, image)
+                elif self.weather == "RAIN":
+                    brighten = 130
+                    image.fill((brighten, brighten, brighten), special_flags=pygame.BLEND_RGB_SUB)
+                    utils.drawCloud(surface, camera, x, y, image)
+                elif self.weather == "CLOUD":
+                    utils.drawCloud(surface, camera, x, y, image)
 
     def renderLabels(self, surface, camera):
         x = self.loc[0]

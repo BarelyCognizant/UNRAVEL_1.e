@@ -13,6 +13,10 @@ async def create_map_object(mapName: str):
     newMapData = {
         "hash": str(uuid.uuid4()),
         "name": mapName,
+        "weather": {
+            "seed": 1,
+            "scroll": 0
+        },
         "idCount": 1,
         "tiles": {
             0: {
