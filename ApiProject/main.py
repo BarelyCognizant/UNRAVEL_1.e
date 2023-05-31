@@ -216,7 +216,8 @@ async def create_player(mapName: str, name: str, id: str, color: str):
                     mapData["hash"] = str(uuid.uuid4())
                     mapData["players"][name] = {
                         "tileId": id,
-                        "color": color
+                        "color": color,
+                        "rememberedTiles": {}
                     }
                     os.remove("maps/" + mapName + ".json")
                     with open("maps/" + mapName + ".json", "x") as outfile:
@@ -238,6 +239,28 @@ async def move_player(mapName: str, name: str, id: str):
                     if player == name:
                         mapData["hash"] = str(uuid.uuid4())
                         mapData["players"][name]["tileId"] = id
+                        os.remove("maps/" + mapName + ".json")
+                        with open("maps/" + mapName + ".json", "x") as outfile:
+                            json.dump(mapData, outfile)
+                        return mapData
+            else:
+                return {"message": "Player does not exist."}
+        else:
+            return {"message": "Tile does not exist."}
+    return {"message": "Map does not exist."}
+
+
+@app.put("/map/{mapName}/players/{name}/remember/{id}/{type}/{label}", status_code=200)
+async def upgrade_players_remembered_tiles(mapName: str, name: str, id: str, type: str, label: str):
+    if os.path.isfile("maps/" + mapName + ".json"):
+        with open("maps/" + mapName + ".json") as mapJsonFile:
+            mapData = json.load(mapJsonFile)
+        if id in mapData["tiles"]:
+            if name in mapData["players"]:
+                for player in mapData["players"]:
+                    if player == name:
+                        mapData["hash"] = str(uuid.uuid4())
+                        mapData["players"][name]["rememberedTiles"][id] = {"type": type, "label": label.replace("_", "")}
                         os.remove("maps/" + mapName + ".json")
                         with open("maps/" + mapName + ".json", "x") as outfile:
                             json.dump(mapData, outfile)
