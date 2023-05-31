@@ -23,10 +23,10 @@ class Map:
 
         exists, location = self.getLocationID(X, Y)
         if not exists:
-            return "Location does not exist yet!"
+            return False
         self.setPlayerLocation(X, Y, player)
         renderer.update_player_vision(self.mapName, player)
-        return "Player successfully moved"
+        return True
 
     #    def StealthRolls (Player, X,Y):
     #        players = getPlayersAtLocation (X,Y)
@@ -56,7 +56,7 @@ class Map:
     # sends off move command to the system
     def setPlayerLocation(self, X, Y, Player):
         ast.literal_eval(requests.put(
-            self.ipAddress + "/map/"+self.name+"/players/" + str(Player) + "/" + str(self.getLocationID(X, Y)[1])).text)
+            self.ipAddress + "/map/"+self.mapName+"/players/" + str(Player) + "/" + str(self.getLocationID(X, Y)[1])).text)
 
     # The bot commands for Thomas
 
@@ -64,51 +64,51 @@ class Map:
     def botMove(self, tileID, Player):
         self.updateMap()
         r = ast.literal_eval(requests.put(
-            self.ipAddress + "/map/"+self.name+"/players/" + str(Player) + "/" + str(tileID)).text)
+            self.ipAddress + "/map/"+self.mapName+"/players/" + str(Player) + "/" + str(tileID)).text)
         return r["message"] if "message" in r else "Player successfully moved"
 
     def N(self, Player):
         self.updateMap()
         X, Y = self.getPlayerLocation(Player)
-        return self.move(X - 1, Y, Player)
+        return Player + " Moves North" if self.move(X - 1, Y, Player) else "Location does not exist yet!"
 
     def S(self, Player):
         self.updateMap()
         X, Y = self.getPlayerLocation(Player)
-        return self.move(X + 1, Y, Player)
+        return Player + " Moves South" if self.move(X + 1, Y, Player) else "Location does not exist yet!"
 
     # Maxime has cursed these co-ordinates
     def NW(self, Player):
         self.updateMap()
         X, Y = self.getPlayerLocation(Player)
         if (Y % 2 == 0):
-            return self.move(X, Y - 1, Player)
+            return Player + " Moves North-West" if self.move(X, Y - 1, Player) else "Location does not exist yet!"
         else:
-            return self.move(X - 1, Y - 1, Player)
+            return Player + " Moves North-West" if self.move(X - 1, Y - 1, Player) else "Location does not exist yet!"
 
     def SW(self, Player):
         self.updateMap()
         X, Y = self.getPlayerLocation(Player)
         if (Y % 2 != 0):
-            return self.move(X, Y - 1, Player)
+            return Player + " Moves South-West" if self.move(X, Y - 1, Player) else "Location does not exist yet!"
         else:
-            return self.move(X + 1, Y - 1, Player)
+            return Player + " Moves South-West" if self.move(X + 1, Y - 1, Player) else "Location does not exist yet!"
 
     def NE(self, Player):
         self.updateMap()
         X, Y = self.getPlayerLocation(Player)
         if (Y % 2 == 0):
-            return self.move(X, Y + 1, Player)
+            return Player + " Moves North-East" if self.move(X, Y + 1, Player) else "Location does not exist yet!"
         else:
-            return self.move(X - 1, Y + 1, Player)
+            return Player + " Moves North-East" if self.move(X - 1, Y + 1, Player) else "Location does not exist yet!"
 
     def SE(self, Player):
         self.updateMap()
         X, Y = self.getPlayerLocation(Player)
         if (Y % 2 != 0):
-            return self.move(X, Y + 1, Player)
+            return Player + " Moves South-East" if self.move(X, Y + 1, Player) else "Location does not exist yet!"
         else:
-            return self.move(X + 1, Y + 1, Player)
+            return Player + " Moves South-East" if self.move(X + 1, Y + 1, Player) else "Location does not exist yet!"
 
     def move_direction(self, player, direction):
         if direction == "N":
@@ -128,32 +128,32 @@ class Map:
 
     def set_label(self, tile_id, label):
         r = ast.literal_eval(requests.post(
-            self.ipAddress + "/map/"+self.name+"/label/" + tile_id + "/" + label).text)
+            self.ipAddress + "/map/"+self.mapName+"/label/" + tile_id + "/" + label).text)
         return r["message"] if "message" in r else "Label successfully set"
 
     def delete_label(self, tile_id, label):
         r = ast.literal_eval(requests.post(
-            self.ipAddress + "/map/"+self.name+"/label/" + tile_id).text)
+            self.ipAddress + "/map/"+self.mapName+"/label/" + tile_id).text)
         return r["message"] if "message" in r else "Label successfully deleted"
 
     def set_comments(self, tile_id, comments):
         r = ast.literal_eval(requests.post(
-            self.ipAddress + "/map/"+self.name+"/comments/" + tile_id + "/" + comments).text)
+            self.ipAddress + "/map/"+self.mapName+"/comments/" + tile_id + "/" + comments).text)
         return r["message"] if "message" in r else "Comment successfully set"
 
     def delete_comments(self, tile_id):
         r = ast.literal_eval(requests.post(
-            self.ipAddress + "/map/"+self.name+"/comments/" + tile_id).text)
+            self.ipAddress + "/map/"+self.mapName+"/comments/" + tile_id).text)
         return r["message"] if "message" in r else "Comment successfully deleted"
 
     def append_comments(self, tile_id, comments):
         r = ast.literal_eval(requests.put(
-            self.ipAddress + "/map/"+self.name+"/comments/" + tile_id + "/" + comments).text)
+            self.ipAddress + "/map/"+self.mapName+"/comments/" + tile_id + "/" + comments).text)
         return r["message"] if "message" in r else "Comment successfully updated"
 
     def add_player(self, tile_id, name, color):
         r = ast.literal_eval(requests.post(
-            self.ipAddress + "/map/"+self.name+"/players/" + name + "/" + tile_id + "/" + color).text)
+            self.ipAddress + "/map/"+self.mapName+"/players/" + name + "/" + tile_id + "/" + color).text)
         return r["message"] if "message" in r else "Player successfully added"
 
 

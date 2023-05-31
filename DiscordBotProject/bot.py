@@ -8,6 +8,7 @@ from discord.ext import commands
 import MapStuff
 import character_sheet_handler as csh
 import server
+from server import cc_results
 from dice import roll_dice
 from MapStuff import Map
 
@@ -60,6 +61,16 @@ async def on_command_error(ctx, error):
         await ctx.send('You do not have the correct role for this command.')
 
 
+# Behind the Curtain
+@bot.event
+async def on_message(message):
+    channel = message.channel
+    content = message.content
+    if channel in player_channels and server.from_player(message) and '!' not in content:
+        player = message.author.name
+        await server.get_control_channel(channel).send(server.format_message(player, content))
+    else:
+        await bot.process_commands(message)
 
 # Character Sheet
 
@@ -108,6 +119,19 @@ async def server_message(ctx, message, option=None, name=None):
         await ctx.send(server.message(message))
 
 
+@bot.command(name="m", help="Sends a message to the the player channel")
+@commands.has_role("gremlin")
+async def control_message(ctx, *args):
+    message = " ".join(args)
+    channel = ctx.message.channel
+    player_channel = server.get_player_channel(channel)
+    print(player_channel.name)
+    if player_channel is not None:
+        await player_channel.send(server.format_message("Server", message))
+    else:
+        await ctx.send("Message failed to send")
+
+
 # Dice
 
 
@@ -122,7 +146,7 @@ async def roll(ctx, *args):
     else:
         result = roll_dice(num)
         message = "Rolling: [" + str(result[0]) + "/" + str(num) + "]"
-    await ctx.send(message)
+    await cc_results(ctx, message)
 
 
 # Movement / Map API
@@ -135,6 +159,7 @@ move_help = "Moves a given player based on the parameters \n " \
 @bot.command(name="move", help=move_help)
 @commands.has_role("gremlin")
 async def move(ctx, *args):
+    ctx = server.set_output_channel(ctx)
     player = args[0]
     directions = args[1:]
     if player and directions:
@@ -147,11 +172,18 @@ async def move(ctx, *args):
         await ctx.send("Incorrect parameters given, please see !help command")
 
 
-@bot.command(name="map", help="Allows Editing of the Map")
+map_help = "Allows Editing of the Map \n " \
+            "Option: label, comment, add (add player) \n" \
+            "Tile: The ID of the tile to edit" \
+            "Content: the content of the label, comment, or player. use delete to delete a label or comment" \
+            "Option2: color for adding players, or the 'set' flag for comments/labels"
+
+
+@bot.command(name="map", help=map_help)
 @commands.has_role("gremlin")
 async def map_edit(ctx, option, tile, content, option2=None):
     if option.lower() == "add" and MapStuff.is_valid_color(option2):
-        await ctx.send(server_map.add_player(tile, content, option))
+        await ctx.send(server_map.add_player(tile, content, option2))
     elif option.lower() == "label":
         if content == "delete":
             await ctx.send(server_map.delete_label(tile, content))
@@ -166,18 +198,6 @@ async def map_edit(ctx, option, tile, content, option2=None):
             await ctx.send(server_map.append_comments(tile, content))
     else:
         return "Incorrect parameter given, please see !help command"
-
-
-# Behind the Curtain
-@bot.event
-async def on_message(message):
-    channel = message.channel
-    if channel in player_channels and server.from_player(message): # TODO not contains !
-        player = message.author.name
-        content = message.content
-        await server.get_control_channel(channel.name).send(server.format_message(player, content))
-    else:
-        await bot.process_commands(message)
 
 
 # Testing

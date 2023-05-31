@@ -8,6 +8,7 @@ path = "./Backups/Server/messages.json"
 
 player_channels = {}
 bound_channels = {}
+bound_channels_reverse = {}
 
 
 def login_gremlin(name):
@@ -31,12 +32,12 @@ def load_players(players, channels, control_channels):
     for channel in channels:
         control_channel = [c for c in control_channels if str(channel.name) in str(c.name)]
         if len(control_channel) > 0:
-            bound_channels[channel.name] = control_channel[0]
+            bound_channels[channel] = control_channel[0]
+            bound_channels_reverse[control_channel[0]] = channel
         for member in channel.members:
             player = [player for player in players if player == member.name]
             if len(player) > 0:
                 player_channels[player[0]] = channel
-    print(player_channels)
     return player_channels
 
 
@@ -52,8 +53,31 @@ def get_channel(player):
     return player_channels[player]
 
 
-def get_control_channel(channel):
-    return bound_channels[channel]
+def get_control_channel(player_channel):
+    return bound_channels[player_channel]
+
+
+def get_player_channel(control_channel):
+    return bound_channels_reverse[control_channel]
+
+
+def set_output_channel(ctx):
+    channel = ctx.message.channel
+    return bound_channels_reverse[channel] if channel in bound_channels_reverse else ctx
+
+
+async def cc_results(ctx, results):
+    channel = ctx.message.channel
+    if channel in bound_channels_reverse:
+        await bound_channels_reverse[channel].send(results)
+    return await ctx.send(results)
+
+
+def get_player_channel_old(control_channel):
+    for channel in bound_channels:
+        if bound_channels[channel] == control_channel:
+            return channel
+    return None
 
 
 def format_message(player, content):
