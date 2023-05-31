@@ -12,6 +12,9 @@ class Tile:
     comments = ""
     covered = False
     height = 0
+    remembered = False
+    rType = ""
+    rLabel = ""
 
     def __init__(self, location, type, unique_id=0, label="", comments=""):
         self.loc = location
@@ -29,24 +32,36 @@ class Tile:
     def render(self, surface, camera, focus=False):
         x = self.loc[0]
         y = self.loc[1]
+        bounds = []
         if utils.vertical:
             color = self.color[0]
             if focus:
                 color = self.color[1]
-            bounds = utils.drawCell(surface, camera, x, y, color)
+            if self.visible:
+                bounds = utils.drawCell(surface, camera, x, y, color)
         else:
-            image = pygame.image.load("..\\MapUIProject\\tiles\\used\\" + self.type)
-            if focus:
-                brighten = 30
-                image.fill((brighten, brighten, brighten), special_flags=pygame.BLEND_RGB_ADD)
-            bounds = utils.drawTile(surface, camera, x, y, image)
+            if self.visible:
+                image = pygame.image.load("..\\MapUIProject\\tiles\\used\\" + self.type)
+                if focus:
+                    brighten = 30
+                    image.fill((brighten, brighten, brighten), special_flags=pygame.BLEND_RGB_ADD)
+                bounds = utils.drawTile(surface, camera, x, y, image)
+            elif self.remembered:
+                image = pygame.image.load("..\\MapUIProject\\tiles\\used\\" + self.rType)
+                image = utils.convertToGreyscale(image)
+                bounds = utils.drawTile(surface, camera, x, y, image)
+
         return bounds
 
     def renderLabels(self, surface, camera):
         x = self.loc[0]
         y = self.loc[1]
-        if self.label != "":
-            utils.drawLabel(surface, camera, x, y, self.label)
+        if self.visible:
+            if self.label != "":
+                utils.drawLabel(surface, camera, x, y, self.label, (255, 255, 255))
+        elif self.remembered:
+            if self.rLabel != "":
+                utils.drawLabel(surface, camera, x, y, self.rLabel, (0, 0, 0))
 
     def get_bounds(self, camera):
         x = self.loc[0]

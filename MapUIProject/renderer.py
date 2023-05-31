@@ -20,8 +20,7 @@ def render_screen(surface, tiles, players, camera, placementMode = False, curren
                 if placementMode:
                     tile.render(surface, camera)
                 else:
-                    if tile.visible:
-                        tile.render(surface, camera, currentFocusTile == tile)
+                    tile.render(surface, camera, currentFocusTile == tile)
     for i in range(lowestX, highestX + 1):
         for tile in tiles:
             if tile.loc[0] == i:
@@ -34,8 +33,7 @@ def render_screen(surface, tiles, players, camera, placementMode = False, curren
     for i in range(lowestX, highestX + 1):
         for tile in tiles:
             if tile.loc[0] == i:
-                if tile.visible:
-                    tile.renderLabels(surface, camera)
+                tile.renderLabels(surface, camera)
 
 
 def render_full_screen(surface, tiles, players, camera, placementMode=False, currentFocusTile=None):
@@ -44,12 +42,15 @@ def render_full_screen(surface, tiles, players, camera, placementMode=False, cur
     render_screen(surface, tiles, players, camera, placementMode, currentFocusTile)
 
 
-def render_perspective(surface, tiles, players, camera, centerId):
+def calculate_vision(tiles, centerId):
+    newVisibleTiles = []
+
     centerTile = None
     for tile in tiles:
         tile.visible = False
         tile.distance = -1
         if tile.id == centerId:
+            newVisibleTiles.append(tile)
             tile.visible = True
             tile.distance = 0
             centerTile = tile
@@ -86,13 +87,20 @@ def render_perspective(surface, tiles, players, camera, centerId):
         for tile in tilesToChange:
             tile[0].visible = True
             tile[0].distance = tile[1]
+            newVisibleTiles.append(tile[0])
 
+    return tiles, newVisibleTiles
+
+
+def render_perspective(surface, tiles, players, camera, centerId):
+    tiles, _ = calculate_vision(tiles, centerId)
     render_screen(surface, tiles, players, camera)
 
 
-def get_map_image_by_tile(mapName, tileId, size, player=False):
+def get_map_image_by_tile(mapName, tileId, size, player=False, tiles=[], Ps=[]):
     mapData = ast.literal_eval(requests.get("http://" + utils.ipAddress + "/map/" + mapName).text)
-    _, Ms, Ps = utils.updateData(mapData)
+    if not tiles:
+        _, tiles, Ps = utils.updateData(mapData)
 
     scale = 100
     camera = {"scale": scale,
@@ -124,12 +132,39 @@ def get_map_image_by_tile(mapName, tileId, size, player=False):
     surface.fill(utils.colors["background"])
 
     if player:
-        render_perspective(surface, Ms, Ps, camera, tileId)
+        render_perspective(surface, tiles, Ps, camera, tileId)
     else:
-        render_full_screen(surface, Ms, Ps, camera)
+        render_full_screen(surface, tiles, Ps, camera)
 
     pygame.image.save(surface, "map.png")
 
 
 def get_map_image_by_player(mapName, playerName, size):
-    get_map_image_by_tile(mapName, playerName, size, True)
+    update_player_vision(mapName, playerName)
+
+    mapData = ast.literal_eval(requests.get("http://" + utils.ipAddress + "/map/" + mapName).text)
+    _, Ms, Ps = utils.updateData(mapData)
+
+    for tile in Ms:
+        if str(tile.id) in mapData["players"][playerName]["rememberedTiles"]:
+            tile.remembered = True
+            tile.rType = mapData["players"][playerName]["rememberedTiles"][tile.id]["type"]
+            tile.rLabel = mapData["players"][playerName]["rememberedTiles"][tile.id]["label"]
+        else:
+            tile.remembered = False
+
+    get_map_image_by_tile(mapName, playerName, size, True, Ms, Ps)
+
+
+def update_player_vision(mapName, playerName):
+    mapData = ast.literal_eval(requests.get("http://" + utils.ipAddress + "/map/" + mapName).text)
+    _, Ms, Ps = utils.updateData(mapData)
+
+    centerId = mapData["players"][playerName]["tileId"]
+    _, newVisibleTiles = calculate_vision(Ms, centerId)
+
+    for tile in newVisibleTiles:
+        if tile.label == "":
+            requests.put("http://" + utils.ipAddress + "/map/" + mapName + "/players/" + playerName + "/remember/" + str(tile.id) + "/" + str(tile.type) + "/_")
+        else:
+            requests.put("http://" + utils.ipAddress + "/map/" + mapName + "/players/" + playerName + "/remember/" + str(tile.id) + "/" + str(tile.type) + "/" + str(tile.label))

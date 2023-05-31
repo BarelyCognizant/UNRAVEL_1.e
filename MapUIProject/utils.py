@@ -121,7 +121,7 @@ def drawCell(surface, camera, x, y, color):
     return rect
 
 
-def drawLabel(surface, camera, x, y, label):
+def drawLabel(surface, camera, x, y, label, color):
     if (y % 2) == 0:
         x = x + 0.5
     x = (x * camera["scale"]) + camera["ox"]
@@ -129,7 +129,7 @@ def drawLabel(surface, camera, x, y, label):
     if not vertical:
         x, y = y, x
     w = labelFont.size(label)[0]
-    addText(surface, label, x - (w / 2), y + 20, labelFont, (255, 255, 255))
+    addText(surface, label, x - (w / 2), y + 20, labelFont, color)
 
 
 def screenToCameraTransform(p, camera):
@@ -188,3 +188,14 @@ def updateData(mapData):
     for player in mapData["players"]:
         Ps.append(Player(player, mapData["players"][player]["tileId"], mapData["players"][player]["color"]))
     return currentMapHash, Ms, Ps
+
+
+def convertToGreyscale(surf):
+    width, height = surf.get_size()
+    for x in range(width):
+        for y in range(height):
+            red, green, blue, alpha = surf.get_at((x, y))
+            average = (red + green + blue) // 3
+            gs_color = (average, average, average, alpha)
+            surf.set_at((x, y), gs_color)
+    return surf
