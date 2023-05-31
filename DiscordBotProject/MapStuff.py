@@ -1,17 +1,23 @@
 import ast
 import requests
 
+import sys
+
+sys.path.append('..\\MapUIProject')
+import renderer
+
 
 # Online Python - IDE, Editor, Compiler, Interpreter
 
-
 class Map:
-    def __init__(self, ip_address="https://b112-2a0e-cb01-2d-2e00-18c7-6c1f-9246-110d.ngrok-free.app"):
+    def __init__(self, ip_address="https://b112-2a0e-cb01-2d-2e00-18c7-6c1f-9246-110d.ngrok-free.app", name="Terra"):
         self.ipAddress = ip_address
-        self.mapData = ast.literal_eval(requests.get(self.ipAddress + "/map/Terra").text)
+        self.mapName = name
+        self.mapData = ast.literal_eval(requests.get(self.ipAddress + "/map/"+self.mapName).text)
+
 
     def updateMap(self):
-        self.mapData = ast.literal_eval(requests.get(self.ipAddress + "/map/Terra").text)  # 192.168.1.22
+        self.mapData = ast.literal_eval(requests.get(self.ipAddress + "/map/"+self.mapName).text)  # 192.168.1.22
 
     def move(self, X, Y, player):
 
@@ -19,7 +25,7 @@ class Map:
         if not exists:
             return "Location does not exist yet!"
         self.setPlayerLocation(X, Y, player)
-
+        renderer.update_player_vision(self.mapName, player)
         return "Player successfully moved"
 
     #    def StealthRolls (Player, X,Y):
@@ -50,7 +56,7 @@ class Map:
     # sends off move command to the system
     def setPlayerLocation(self, X, Y, Player):
         ast.literal_eval(requests.put(
-            self.ipAddress + "/map/Terra/players/" + str(Player) + "/" + str(self.getLocationID(X, Y)[1])).text)
+            self.ipAddress + "/map/"+self.name+"/players/" + str(Player) + "/" + str(self.getLocationID(X, Y)[1])).text)
 
     # The bot commands for Thomas
 
@@ -58,7 +64,7 @@ class Map:
     def botMove(self, tileID, Player):
         self.updateMap()
         r = ast.literal_eval(requests.put(
-            self.ipAddress + "/map/Terra/players/" + str(Player) + "/" + str(tileID)).text)
+            self.ipAddress + "/map/"+self.name+"/players/" + str(Player) + "/" + str(tileID)).text)
         return r["message"] if "message" in r else "Player successfully moved"
 
     def N(self, Player):
@@ -122,32 +128,32 @@ class Map:
 
     def set_label(self, tile_id, label):
         r = ast.literal_eval(requests.post(
-            self.ipAddress + "/map/Terra/label/" + tile_id + "/" + label).text)
+            self.ipAddress + "/map/"+self.name+"/label/" + tile_id + "/" + label).text)
         return r["message"] if "message" in r else "Label successfully set"
 
     def delete_label(self, tile_id, label):
         r = ast.literal_eval(requests.post(
-            self.ipAddress + "/map/Terra/label/" + tile_id).text)
+            self.ipAddress + "/map/"+self.name+"/label/" + tile_id).text)
         return r["message"] if "message" in r else "Label successfully deleted"
 
     def set_comments(self, tile_id, comments):
         r = ast.literal_eval(requests.post(
-            self.ipAddress + "/map/Terra/comments/" + tile_id + "/" + comments).text)
+            self.ipAddress + "/map/"+self.name+"/comments/" + tile_id + "/" + comments).text)
         return r["message"] if "message" in r else "Comment successfully set"
 
     def delete_comments(self, tile_id):
         r = ast.literal_eval(requests.post(
-            self.ipAddress + "/map/Terra/comments/" + tile_id).text)
+            self.ipAddress + "/map/"+self.name+"/comments/" + tile_id).text)
         return r["message"] if "message" in r else "Comment successfully deleted"
 
     def append_comments(self, tile_id, comments):
         r = ast.literal_eval(requests.put(
-            self.ipAddress + "/map/Terra/comments/" + tile_id + "/" + comments).text)
+            self.ipAddress + "/map/"+self.name+"/comments/" + tile_id + "/" + comments).text)
         return r["message"] if "message" in r else "Comment successfully updated"
 
     def add_player(self, tile_id, name, color):
         r = ast.literal_eval(requests.post(
-            self.ipAddress + "/map/Terra/players/" + name + "/" + tile_id + "/" + color).text)
+            self.ipAddress + "/map/"+self.name+"/players/" + name + "/" + tile_id + "/" + color).text)
         return r["message"] if "message" in r else "Player successfully added"
 
 

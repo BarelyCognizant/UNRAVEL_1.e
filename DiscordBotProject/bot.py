@@ -38,13 +38,17 @@ async def on_ready():
     status_channel = [channel for channel in guild.channels if channel.name == "server-status"][0]
     player_rooms = discord.utils.get(guild.categories, id=1112766611963772989)
     player_channels = player_rooms.text_channels
+    player_control_channels = discord.utils.get(guild.categories, id=1113212348887482458).text_channels
 
     gremlin_role = discord.utils.get(guild.roles, id=1112687715750785075)
     gremlins = [m.display_name for m in gremlin_role.members]
     server.load_gremlins(gremlins)
     server.load_messages()
+    player_role = discord.utils.get(guild.roles, id=1113223879998046319)
+    players = [m.name for m in player_role.members]
+    server.load_players(players, player_channels, player_control_channels)
 
-    server_map = Map("http://192.168.1.22:8000")
+    server_map = Map("http://192.168.1.22:8000", "Terra")
 
 
 # Permissions
@@ -54,6 +58,7 @@ async def on_ready():
 async def on_command_error(ctx, error):
     if isinstance(error, commands.errors.CheckFailure):
         await ctx.send('You do not have the correct role for this command.')
+
 
 
 # Character Sheet
@@ -134,8 +139,6 @@ async def move(ctx, *args):
     directions = args[1:]
     if player and directions:
         for direction in directions:
-            print(player)
-            print(direction)
             if direction.isnumeric():
                 await ctx.send(server_map.botMove(int(direction), player))
             else:
@@ -146,7 +149,7 @@ async def move(ctx, *args):
 
 @bot.command(name="map", help="Allows Editing of the Map")
 @commands.has_role("gremlin")
-async def test(ctx, option, tile, content, option2=None):
+async def map_edit(ctx, option, tile, content, option2=None):
     if option.lower() == "add" and MapStuff.is_valid_color(option2):
         await ctx.send(server_map.add_player(tile, content, option))
     elif option.lower() == "label":
@@ -163,6 +166,18 @@ async def test(ctx, option, tile, content, option2=None):
             await ctx.send(server_map.append_comments(tile, content))
     else:
         return "Incorrect parameter given, please see !help command"
+
+
+# Behind the Curtain
+@bot.event
+async def on_message(message):
+    channel = message.channel
+    if channel in player_channels and server.from_player(message): # TODO not contains !
+        player = message.author.name
+        content = message.content
+        await server.get_control_channel(channel.name).send(server.format_message(player, content))
+    else:
+        await bot.process_commands(message)
 
 
 # Testing

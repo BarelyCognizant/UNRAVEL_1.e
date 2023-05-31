@@ -6,6 +6,9 @@ online_gremlins = []
 message_shortcuts = {"test": "This is an Automated Server Test Message. \n Please Ignore."}
 path = "./Backups/Server/messages.json"
 
+player_channels = {}
+bound_channels = {}
+
 
 def login_gremlin(name):
     online_gremlins.append(name)
@@ -22,6 +25,39 @@ def logout_gremlin(name):
 
 def load_gremlins(gremlin_list):
     gremlins.append(gremlin_list)
+
+
+def load_players(players, channels, control_channels):
+    for channel in channels:
+        control_channel = [c for c in control_channels if str(channel.name) in str(c.name)]
+        if len(control_channel) > 0:
+            bound_channels[channel.name] = control_channel[0]
+        for member in channel.members:
+            player = [player for player in players if player == member.name]
+            if len(player) > 0:
+                player_channels[player[0]] = channel
+    print(player_channels)
+    return player_channels
+
+
+def get_players():
+    return player_channels
+
+
+def from_player(sent_message):
+    return sent_message.author.name in player_channels
+
+
+def get_channel(player):
+    return player_channels[player]
+
+
+def get_control_channel(channel):
+    return bound_channels[channel]
+
+
+def format_message(player, content):
+    return command_wrap(player + " :: " + content)
 
 
 def command_wrap(text):
