@@ -13,7 +13,6 @@ from server import cc_results
 from dice import roll_dice
 from MapStuff import Map
 from functools import reduce
-import character_sheet_handler
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -220,6 +219,7 @@ async def sheet(ctx, name, command, *params):
             # e.g. !sheet <soren> add inventory skull 2
             # e.g. !sheet <soren> add inventory/backpack skull 2
             # e.g. !sheet <soren> add inventory/bandolier healing_potion 1
+            # e.g. !sheet <soren> add skills building 1
             target = reduce(lambda a, b: str(a) + "/" + str(b), params[1:-2], params[0])
         else:
             # e.g. !sheet <soren> add hp 10
@@ -229,7 +229,7 @@ async def sheet(ctx, name, command, *params):
             targets = re.split("/", key)
             target = reduce(lambda a, b: str(a) + "/" + str(b), params[1:-2], params[0])
             key = targets[-1]
-        await ctx.send(character_sheet_handler.add_data(name, key=key, value=value, target=target))
+        await ctx.send(csh.add_data(name, key=key, value=value, target=target))
     if command == "show":
         if len(params == 0):
             # e.g. !sheet <soren> show
@@ -238,7 +238,7 @@ async def sheet(ctx, name, command, *params):
             # e.g. !sheet <soren> show achievements
             # e.g. !sheet <soren> show backpack/bandolier
             target = reduce(lambda a, b: str(a) + "/" + str(b), params[1:], params[0])
-        await ctx.send(character_sheet_handler.get_data(name, target))
+        await ctx.send(csh.get_data(name, target))
 
 
 # Testing
