@@ -1,5 +1,6 @@
 # bot.py
 import os
+import re
 
 import discord
 from dotenv import load_dotenv
@@ -11,6 +12,8 @@ import server
 from server import cc_results
 from dice import roll_dice
 from MapStuff import Map
+from functools import reduce
+import character_sheet_handler
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -28,6 +31,7 @@ async def on_ready():
     global status_channel
     global player_channels
     global server_map
+
     guild = discord.utils.get(bot.guilds, name=GUILD)
     print(
         f'{bot.user} is connected to the following guild:\n'
@@ -71,6 +75,7 @@ async def on_message(message):
         await server.get_control_channel(channel).send(server.format_message(player, content))
     else:
         await bot.process_commands(message)
+
 
 # Character Sheet
 
@@ -173,10 +178,10 @@ async def move(ctx, *args):
 
 
 map_help = "Allows Editing of the Map \n " \
-            "Option: label, comment, add (add player) \n" \
-            "Tile: The ID of the tile to edit" \
-            "Content: the content of the label, comment, or player. use delete to delete a label or comment" \
-            "Option2: color for adding players, or the 'set' flag for comments/labels"
+           "Option: label, comment, add (add player) \n" \
+           "Tile: The ID of the tile to edit" \
+           "Content: the content of the label, comment, or player. use delete to delete a label or comment" \
+           "Option2: color for adding players, or the 'set' flag for comments/labels"
 
 
 @bot.command(name="map", help=map_help)
@@ -198,6 +203,42 @@ async def map_edit(ctx, option, tile, content, option2=None):
             await ctx.send(server_map.append_comments(tile, content))
     else:
         return "Incorrect parameter given, please see !help command"
+
+
+# Testing
+
+@bot.command(name="sheet", help="modify your character sheet")
+@commands.has_role("gremlin")
+async def sheet(ctx, name, command, *params):
+    # TODO: implement this function
+    # name = server.get_character_from_channel(ctx)
+    # TODO: implement integration of sheet handler
+    if command == "add":
+        value = params[-1]
+        key = params[-2]
+        if len(params) > 2:
+            # e.g. !sheet <soren> add inventory skull 2
+            # e.g. !sheet <soren> add inventory/backpack skull 2
+            # e.g. !sheet <soren> add inventory/bandolier healing_potion 1
+            target = reduce(lambda a, b: str(a) + "/" + str(b), params[1:-2], params[0])
+        else:
+            # e.g. !sheet <soren> add hp 10
+            # e.g. !sheet <soren> add achievements murderer
+            # e.g. !sheet <soren> add inventory skull
+            # e.g. !sheet <soren> add inventory/backpack skull
+            targets = re.split("/", key)
+            target = reduce(lambda a, b: str(a) + "/" + str(b), params[1:-2], params[0])
+            key = targets[-1]
+        await ctx.send(character_sheet_handler.add_data(name, key=key, value=value, target=target))
+    if command == "show":
+        if len(params == 0):
+            # e.g. !sheet <soren> show
+            target = None
+        else:
+            # e.g. !sheet <soren> show achievements
+            # e.g. !sheet <soren> show backpack/bandolier
+            target = reduce(lambda a, b: str(a) + "/" + str(b), params[1:], params[0])
+        await ctx.send(character_sheet_handler.get_data(name, target))
 
 
 # Testing

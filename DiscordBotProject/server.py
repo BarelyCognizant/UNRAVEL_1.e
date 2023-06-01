@@ -66,6 +66,24 @@ def set_output_channel(ctx):
     return bound_channels_reverse[channel] if channel in bound_channels_reverse else ctx
 
 
+def get_player_from_channel(ctx):
+    channel = ctx.message.channel
+    for k, v in player_channels:
+        if v == bound_channels_reverse[channel]:
+            return k
+    return None
+
+
+def get_character_from_channel(ctx):
+    return get_character_from_player(get_player_from_channel(ctx))
+
+
+# TODO write this
+# method should return the string for the character name
+def get_character_from_player(player):
+    return "Soren"
+
+
 async def cc_results(ctx, results):
     channel = ctx.message.channel
     if channel in bound_channels_reverse:
