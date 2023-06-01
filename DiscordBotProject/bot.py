@@ -125,13 +125,14 @@ async def sheet(ctx, command, name=None, *params):
             # e.g. !sheet <soren> show achievements
             # e.g. !sheet <soren> show backpack/bandolier
             target = reduce(lambda a, b: str(a) + "/" + str(b), params[1:], params[0])
-        await cc_results(ctx, csh.get_data(name, target))
+        await cc_results(ctx, "\n"+csh.get_data(name, target))
     if command == "view":
         if len(params) == 0:
             target = None
         else:
             target = reduce(lambda a, b: str(a) + "/" + str(b), params[1:], params[0])
         await ctx.send(server.command_wrap(csh.get_data(name, target)))
+
 
 
 # Login/Status

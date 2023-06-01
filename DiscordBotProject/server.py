@@ -107,7 +107,7 @@ def add_player(ctrl_channel, character, skills=None):
 async def cc_results(ctx, results):
     channel = ctx.message.channel
     if channel in bound_channels_reverse:
-        await bound_channels_reverse[channel].send(format_message("server", results))
+        await bound_channels_reverse[channel].send(format_message("Server", results))
     return await ctx.send(command_wrap(results))
 
 
