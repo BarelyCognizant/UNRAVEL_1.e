@@ -1,90 +1,96 @@
 import os
-from character_sheet import load_file, Player
+from character_sheet import Character
 import re
 
-path = "./Backups/Players/"
+path = "./Backups/Characters/"
 sheets = []
 
 
 def load_sheets():
-    sheets.append([Player(filepath=path + file) for file in os.listdir(path)])
+    if len(sheets) == 0:
+        [sheets.append(Character(filepath=path + file)) for file in os.listdir(path)]
 
 
-def get_player(name):
-    matches = [player for player in sheets if name == player.get_data["name"]]
-    if len(matches) == 0:
+def get_sheets():
+    return sheets
+
+
+def get_character(name):
+    matches = [character for character in sheets if name == character.data["Name"]]
+    if len(matches) > 0:
         return matches[0]
     else:
         return None
 
 
-def add_new_player(name):
-    player = Player(name=name)
-    sheets.append(player)
-    return "Player Created Successfully"
+def add_new_character(name, player, skill_list):
+    character = Character(player=player, name=name, skill_list=skill_list)
+    character.save_to_file(path + name)
+    sheets.append(character)
+    return "Character Created Successfully"
 
 
-# name: player name
+# name: character name
 # target: the place to add the data, if None, adds it to the root of the sheet
-# TODO: check the player object updates properly (referencing is hard)
+# TODO: check the character object updates properly (referencing is hard)
 def add_data(name, key, value, target=None):
-    player = get_player(name)
-    if player is not None:
-        return player.add_data(target=target, key=key, value=value)
+    character = get_character(name)
+    if character is not None:
+        return character.add_data(target=target, key=key, value=value)
     else:
-        return "could not find player " + name
+        return "could not find character " + name
 
 
 def remove_data(name, key, target=None):
-    player = get_player(name)
-    if player:
-        string = player.remove_data(target, key)
+    character = get_character(name)
+    if character:
+        string = character.remove_data(target, key)
         return "removed " + string
     else:
-        return "could not find player " + name
+        return "could not find character " + name
 
 
 def move_data(name, key, source=None, target=None):
-    player = get_player(name)
-    if player:
-        data = player.get_data(target=source, key=key)
-        player.remove_data(target=source, key=key)
-        return player.add_data(target=target, key=key, value=data)
+    character = get_character(name)
+    if character:
+        data = character.get_data(target=source, key=key)
+        character.remove_data(target=source, key=key)
+        return character.add_data(target=target, key=key, value=data)
     else:
-        return "could not find player " + name
+        return "could not find character " + name
 
 
-# name: player name
+# name: character name
 # target: the place to add the data, if None, adds it to the root of the sheet
 def find_data(name, target):
-    player = get_player(name)
-    if player is None:
-        raise RuntimeError("could not find player " + name)
+    character = get_character(name)
+    if character is None:
+        raise RuntimeError("could not find character " + name)
     if target is not None:
         data_path = re.split("/", target)
-        data = player.get_data()
+        data = character.get_data()
         for s in data_path:
             if s in data:
                 data = data[s]
             else:
-                raise RuntimeError("data path " + data_path + " failed to find " + s)
-        return data, data_path, player
+                raise RuntimeError("data path " + target + " failed to find " + s)
+        return data, data_path, character
     else:
         raise RuntimeError("data path is None")
 
 
-# name: player name
+# name: character name
 # target: where to find the target data "target/subtarget/subsubtarget", if None will return all data
 def get_data(name, target=None):
     if target is not None:
         try:
-            data, data_path, player = find_data(name, target)
+            data, data_path, character = find_data(name, target)
         except RuntimeError as e:
             return e
-        return player.get_desc(key=data_path[-1], value=data)
+        return character.get_desc(key=data_path[-1], value=data)
     else:
-        player = get_player(name)
-        if player is not None:
-            return player.get_desc()
+        character = get_character(name)
+        if character is not None:
+            return character.get_desc()
         else:
-            return "could not find player " + name
+            return "could not find character " + name

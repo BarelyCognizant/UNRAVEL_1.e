@@ -38,21 +38,32 @@ def load_file(filepath):
         return json.load(json_file)
 
 
-def save_file(filepath, dict):
+def save_file(filepath, sheet):
     with open(filepath, 'w') as f:
-        json.dump(dict, f)
+        json.dump(sheet, f)
 
 
-class Player:
+class Character:
     # valid data types: [str, int, dict, list]
-    def __init__(self, name="", HP=0, filepath=""):
+    def __init__(self, player=None, name="", skill_list=None, HP=5, filepath=""):
         self.data = {}
-        if filepath == "":
+        if not filepath == "":
             self.data.update(load_file(filepath))
         else:
+            if skill_list is None:
+                skill_list = []
+            skills = {}
+            if len(skill_list) > 0:
+                for i in range(len(skill_list)):
+                    skills[skill_list[i]] = max(5 - i, 2)
             self.data.update({
-                "name": name,
-                "HP": HP
+                "Name": name,
+                "Player": player,
+                "HP": HP,
+                "Inventory": {},
+                "Skills": skills,
+                "Titles": {},
+                "Achievements": {},
             })
 
     def remove_data(self, target, key):
@@ -90,7 +101,7 @@ class Player:
             elif value not in data_source[key]:
                 data_source[key].update({value: 1})
             else:
-                return self.add_data(target=(target+"/key"), key=value, value=1)
+                return self.add_data(target=(target + "/key"), key=value, value=1)
         else:
             ret = "overwriting \n" + self.get_desc(key=key, value=data_source[key])
             data_source.update({key: value})

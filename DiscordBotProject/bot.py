@@ -6,8 +6,8 @@ import discord
 from dotenv import load_dotenv
 from discord.ext import commands
 
-import MapStuff
 import character_sheet_handler as csh
+import MapStuff
 import server
 from server import cc_results
 from dice import roll_dice
@@ -51,6 +51,8 @@ async def on_ready():
     player_role = discord.utils.get(guild.roles, id=1113223879998046319)
     players = [m.name for m in player_role.members]
     server.load_players(players, player_channels, player_control_channels)
+    csh.load_sheets()
+    server.load_characters()
 
     server_map = Map("http://192.168.1.22:8000", "Terra")
 
@@ -79,19 +81,57 @@ async def on_message(message):
 # Character Sheet
 
 
-@bot.command(name="createPlayer", help="Create an Player with a given name \n name: name")
+@bot.command(name="viewSheet", help="View a given player's character sheet \n name: the name of the character to "
+                                    "view")
 @commands.has_role("gremlin")
-async def add_new_player(ctx, name):
-    await ctx.send(csh.add_new_player(name))
-
-
-@bot.command(name="viewPlayer", help="View a given player's character sheet \n name: the name of the player to view")
-async def view_player(ctx, name):
-    player = csh.get_player(name)
-    if player is not None:
-        await ctx.send(player.get_player_desc())
+async def view_sheet(ctx, name):
+    character = csh.get_character(name)
+    if character is not None:
+        await ctx.send(server.command_wrap(character.get_desc()))
     else:
         await ctx.send("No player exists with that name")
+
+
+@bot.command(name="sheet", help="modify your character sheet")
+@commands.has_role("gremlin")
+async def sheet(ctx, command, name=None, *params):
+    if name is None:
+        name = server.get_character_from_ctrl_channel(ctx)
+    if name is None:
+        return await ctx.send("Please provide a name or use the command from a control channel")
+    if command == "add":
+        value = params[-1]
+        key = params[-2]
+        if len(params) > 2:
+            # e.g. !sheet <soren> add inventory skull 2
+            # e.g. !sheet <soren> add inventory/backpack skull 2
+            # e.g. !sheet <soren> add inventory/bandolier healing_potion 1
+            # e.g. !sheet <soren> add skills building 1
+            target = reduce(lambda a, b: str(a) + "/" + str(b), params[1:-2], params[0])
+        else:
+            # e.g. !sheet <soren> add hp 10
+            # e.g. !sheet <soren> add achievements murderer
+            # e.g. !sheet <soren> add inventory skull
+            # e.g. !sheet <soren> add inventory/backpack skull
+            targets = re.split("/", key)
+            target = reduce(lambda a, b: str(a) + "/" + str(b), params[1:-2], params[0])
+            key = targets[-1]
+        await ctx.send(csh.add_data(name, key=key, value=value, target=target))
+    if command == "show":
+        if len(params) == 0:
+            # e.g. !sheet <soren> show
+            target = None
+        else:
+            # e.g. !sheet <soren> show achievements
+            # e.g. !sheet <soren> show backpack/bandolier
+            target = reduce(lambda a, b: str(a) + "/" + str(b), params[1:], params[0])
+        await cc_results(ctx, csh.get_data(name, target))
+    if command == "view":
+        if len(params) == 0:
+            target = None
+        else:
+            target = reduce(lambda a, b: str(a) + "/" + str(b), params[1:], params[0])
+        await ctx.send(server.command_wrap(csh.get_data(name, target)))
 
 
 # Login/Status
@@ -129,7 +169,6 @@ async def control_message(ctx, *args):
     message = " ".join(args)
     channel = ctx.message.channel
     player_channel = server.get_player_channel(channel)
-    print(player_channel.name)
     if player_channel is not None:
         await player_channel.send(server.format_message("Server", message))
     else:
@@ -180,13 +219,15 @@ map_help = "Allows Editing of the Map \n " \
            "Option: label, comment, add (add player) \n" \
            "Tile: The ID of the tile to edit" \
            "Content: the content of the label, comment, or player. use delete to delete a label or comment" \
-           "Option2: color for adding players, or the 'set' flag for comments/labels"
+           "Option2: color for adding players, or the 'set' flag for comments/labels" \
+           "*skills: any skills that need to be added as part of character creation"
 
 
 @bot.command(name="map", help=map_help)
 @commands.has_role("gremlin")
-async def map_edit(ctx, option, tile, content, option2=None):
+async def map_edit(ctx, option, tile, content, option2=None, *skills):
     if option.lower() == "add" and MapStuff.is_valid_color(option2):
+        server.add_player(ctx.message.channel, content, skills)
         await ctx.send(server_map.add_player(tile, content, option2))
     elif option.lower() == "label":
         if content == "delete":
@@ -202,43 +243,6 @@ async def map_edit(ctx, option, tile, content, option2=None):
             await ctx.send(server_map.append_comments(tile, content))
     else:
         return "Incorrect parameter given, please see !help command"
-
-
-# Testing
-
-@bot.command(name="sheet", help="modify your character sheet")
-@commands.has_role("gremlin")
-async def sheet(ctx, name, command, *params):
-    # TODO: implement this function
-    # name = server.get_character_from_channel(ctx)
-    # TODO: implement integration of sheet handler
-    if command == "add":
-        value = params[-1]
-        key = params[-2]
-        if len(params) > 2:
-            # e.g. !sheet <soren> add inventory skull 2
-            # e.g. !sheet <soren> add inventory/backpack skull 2
-            # e.g. !sheet <soren> add inventory/bandolier healing_potion 1
-            # e.g. !sheet <soren> add skills building 1
-            target = reduce(lambda a, b: str(a) + "/" + str(b), params[1:-2], params[0])
-        else:
-            # e.g. !sheet <soren> add hp 10
-            # e.g. !sheet <soren> add achievements murderer
-            # e.g. !sheet <soren> add inventory skull
-            # e.g. !sheet <soren> add inventory/backpack skull
-            targets = re.split("/", key)
-            target = reduce(lambda a, b: str(a) + "/" + str(b), params[1:-2], params[0])
-            key = targets[-1]
-        await ctx.send(csh.add_data(name, key=key, value=value, target=target))
-    if command == "show":
-        if len(params == 0):
-            # e.g. !sheet <soren> show
-            target = None
-        else:
-            # e.g. !sheet <soren> show achievements
-            # e.g. !sheet <soren> show backpack/bandolier
-            target = reduce(lambda a, b: str(a) + "/" + str(b), params[1:], params[0])
-        await ctx.send(csh.get_data(name, target))
 
 
 # Testing
