@@ -38,35 +38,93 @@ def load_file(filepath):
         return json.load(json_file)
 
 
-def save_file(filepath, dict):
+def save_file(filepath, sheet):
     with open(filepath, 'w') as f:
-        json.dump(dict, f)
+        json.dump(sheet, f)
 
 
-class Player:
-    data = {}
-
-    def __init__(self, name="", HP=0, filepath=""):
+class Character:
+    # valid data types: [str, int, dict, list]
+    def __init__(self, player=None, name="", skill_list=None, HP=5, filepath=""):
         self.data = {}
-        if filepath == "":
+        if not filepath == "":
             self.data.update(load_file(filepath))
         else:
+            if skill_list is None:
+                skill_list = []
+            skills = {}
+            if len(skill_list) > 0:
+                for i in range(len(skill_list)):
+                    skills[skill_list[i]] = max(5 - i, 2)
             self.data.update({
-                "name": name,
-                "HP": HP
+                "Name": name,
+                "Player": player,
+                "HP": HP,
+                "Inventory": {},
+                "Skills": skills,
+                "Titles": {},
+                "Achievements": {},
             })
 
-    def update_data(self, update):
-        self.data.update(update)
-
-    def get_data(self, key=None):
-        if key is None:
-            return self.data
+    def remove_data(self, target, key):
+        if target is not None:
+            try:
+                data_source, data_path = self.find_data(target)
+            except RuntimeError as e:
+                return e
         else:
-            if key in self.data:
-                return self.data[key]
+            data_source = self.data
+        return data_source.pop(key)
+
+    def add_data(self, target, key, value):
+        if target is not None:
+            try:
+                data_source, data_path = self.find_data(target)
+            except RuntimeError as e:
+                return e
+        else:
+            data_source = self.data
+        if type(data_source[key]) is int:
+            if type(value) is int:
+                data_source.update({key: data_source[key] + value})
             else:
-                return None
+                data_source.update({key: value})
+            return "adding " + str(key) + " (" + str(value) + "). new value: " + str(key) + " (" + str(
+                data_source[key]) + ")"
+        elif type(data_source[key]) is list:
+            data_source[key].append(value)
+            return "adding " + str(key) + " [" + str(value) + "]. new value: " + str(key) + str(
+                data_source[key])
+        elif type(data_source[key]) is dict:
+            if type(value) is dict:
+                data_source[key].update(value)
+            elif value not in data_source[key]:
+                data_source[key].update({value: 1})
+            else:
+                return self.add_data(target=(target + "/key"), key=value, value=1)
+        else:
+            ret = "overwriting \n" + self.get_desc(key=key, value=data_source[key])
+            data_source.update({key: value})
+            return ret + "\nwith\n" + self.get_desc(key=key, value=value)
+
+    def find_data(self, target):
+        if target is not None:
+            data_path = re.split("/", target)
+            source = self.data
+            for s in data_path:
+                if s in source:
+                    source = source[s]
+                else:
+                    raise RuntimeError("data path " + target + " failed to find " + s)
+            return source, data_path
+        else:
+            raise RuntimeError("data path is None")
+
+    def get_data(self, target=None, key=None):
+        if key is None:
+            return self.find_data(target)[0]
+        else:
+            return self.find_data(target)[0][key]
 
     def save_to_file(self, filepath):
         save_file(filepath, self.data)
@@ -76,7 +134,7 @@ class Player:
         output = ""
 
         def append(string):
-            return output + initial_indent + indent + string + "\n"
+            return output + initial_indent + indent + string
 
         if value is None:
             value = self.data
@@ -84,22 +142,20 @@ class Player:
         recur = []
         if type(value) == int or type(value) == str:
             if key is None:
-                return append(value)
+                return append(str(value)) + "\n"
             elif simple_style == "colon":
-                return append(key + ": " + value)
+                return append(str(key) + ": " + str(value)) + "\n"
             elif simple_style == "paren":
-                return append(key + "(" + value + ")")
+                return append(str(key) + "(" + str(value) + ")") + "\n"
 
         elif type(value) == list:
             if key is not None:
-                output = append(key)
+                output = append(str(key)) + ":\n"
             for v in value:
                 output = output + self.get_desc(value=v, initial_indent=initial_indent + "  ")
-        elif type(value) == tuple:
-            output = output + self.get_desc(key=value[0], value=value[1])
         elif type(value) == dict:
             if key is not None:
-                output = append(key)
+                output = append(str(key)) + ":\n"
             for k, v in value.items():
-                output = append(self.get_desc(key=k, value=v))
+                output = append(self.get_desc(key=k, value=v, initial_indent=initial_indent + "  "))
         return output
