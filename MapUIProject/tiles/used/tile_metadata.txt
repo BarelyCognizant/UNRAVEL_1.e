@@ -13,10 +13,10 @@ ocean\rightport.png	False	0
 ocean\upport.png	False	0
 settlement\city.png	False	1
 settlement\ruin.png	False	0
-settlement\sandcity.png	False	1
-settlement\sandtown.png	False	0
-settlement\snowcity.png	False	1
-settlement\snowtown.png	False	0
+desert\sandcity.png	False	1
+desert\sandtown.png	False	0
+snow\snowcity.png	False	1
+snow\snowtown.png	False	0
 settlement\town.png	False	0
 settlement\village.png	False	0
 snow\mountain.png	False	2

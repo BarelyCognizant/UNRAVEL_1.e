@@ -9,6 +9,7 @@ class Tile:
     loc = (0, 0)
     id = 0
     type = ""
+    biome = ""
     color = None
     neighbours = []
     label = ""
@@ -20,11 +21,14 @@ class Tile:
     rLabel = ""
     weather = 0.0
     cloudPoints = []
+    rain_threshold = 0.0
+    cloud_threshold = 0.0
 
     def __init__(self, location, type, unique_id=0, label="", comments=""):
         self.loc = location
         self.id = unique_id
         self.type = type
+        self.biome = self.type.split("\\")[0]
         self.color = utils.colors[self.type.split("\\")[0]]
         self.label = label
         self.comments = comments
@@ -33,6 +37,14 @@ class Tile:
         self.visible = False
         self.distance = -1
         self.neighbours = []
+        self.rain_threshold = utils.region_metadata[self.biome]["rain_threshold"]
+        self.cloud_threshold = utils.region_metadata[self.biome]["cloud_threshold"]
+        if self.height == 2:
+            self.rain_threshold += 0.02
+            self.cloud_threshold += 0.02
+        elif self.height == 3:
+            self.rain_threshold += 0.06
+            self.cloud_threshold += 0.06
 
     def render(self, surface, camera, focus=False):
         x = self.loc[0]
@@ -59,12 +71,12 @@ class Tile:
         return bounds
 
     def setWeather(self, weatherValue):
-        if weatherValue < -0.2:
+        if weatherValue < self.rain_threshold:
             if self.type.split("\\")[0] == "snow":
                 self.weather = "SNOW"
             else:
                 self.weather = "RAIN"
-        elif weatherValue < -0.05:
+        elif weatherValue < self.cloud_threshold:
             self.weather = "CLOUD"
         else:
             self.weather = "CLEAR"

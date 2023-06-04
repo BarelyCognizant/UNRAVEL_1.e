@@ -108,7 +108,7 @@ currentFocusTile = None
 
 mapData = ast.literal_eval(requests.get("http://" + utils.ipAddress + "/map/" + sys.argv[1]).text)
 
-currentMapHash, Ms, Ps = utils.updateData(mapData)
+currentMapHash, Ms, Ps = utils.updateData(mapData, camera)
 
 center(Ms, camera)
 
@@ -179,7 +179,7 @@ while True:
         elif event.type == CHECKHASHEVENT:
             mapData = ast.literal_eval(requests.get("http://" + utils.ipAddress + "/map/" + sys.argv[1]).text)
             if currentMapHash != mapData["hash"]:
-                currentMapHash, Ms, Ps = utils.updateData(mapData)
+                currentMapHash, Ms, Ps = utils.updateData(mapData, camera)
 
     DISPLAY_SURF.fill(utils.colors["background"])
     BsBoxes = []
@@ -303,7 +303,7 @@ while True:
                 else:
                     if "message" in mapData:
                         mapData = ast.literal_eval(requests.get("http://" + utils.ipAddress + "/map/" + sys.argv[1]).text)
-                        currentMapHash, Ms, Ps = utils.updateData(mapData)
+                        currentMapHash, Ms, Ps = utils.updateData(mapData, camera)
                         mapData = ast.literal_eval(requests.post("http://" + utils.ipAddress +
                                                                  "/map/" + sys.argv[1] +
                                                                  "/tile/" + str(toAppend.loc[0]) +
@@ -338,13 +338,13 @@ while True:
                         if "message" in mapData:
                             mapData = ast.literal_eval(requests.get("http://" + utils.ipAddress + "/map/" + sys.argv[1]).text)
 
-                            currentMapHash, Ms, Ps = utils.updateData(mapData)
+                            currentMapHash, Ms, Ps = utils.updateData(mapData, camera)
                             mapData = ast.literal_eval(requests.delete("http://" + utils.ipAddress +
                                                              "/map/" + sys.argv[1] +
                                                              "/tile/" + str(hoverPoint.id) +
                                                              "/" + currentMapHash).text)
                         if "message" not in mapData:
-                            currentMapHash, Ms, Ps = utils.updateData(mapData)
+                            currentMapHash, Ms, Ps = utils.updateData(mapData, camera)
                 renderer.update_clouds(Ms, camera)
             elif leftClick and not edge:
                 newType = utils.tiles[currentSelectionIndex]
@@ -359,7 +359,7 @@ while True:
                     if "message" in mapData:
                         mapData = ast.literal_eval(requests.get("http://" + utils.ipAddress + "/map/" + sys.argv[1]).text)
 
-                        currentMapHash, Ms, Ps = utils.updateData(mapData)
+                        currentMapHash, Ms, Ps = utils.updateData(mapData, camera)
                         mapData = ast.literal_eval(requests.put("http://" + utils.ipAddress +
                                                                 "/map/" + sys.argv[1] +
                                                                 "/tile/" + newType +
@@ -367,7 +367,7 @@ while True:
                                                                 "/" + currentMapHash).text)
 
                     if "message" not in mapData:
-                        currentMapHash, Ms, Ps = utils.updateData(mapData)
+                        currentMapHash, Ms, Ps = utils.updateData(mapData, camera)
     else:
 
         if leftClick:
@@ -412,6 +412,7 @@ while True:
                 "X: " + str(x) + ", Y:" + str(y),
                 "Type: " + str(currentFocusTile.type),
                 "Label: " + currentFocusTile.label,
+                "Weather: " + currentFocusTile.weather,
                 "",
                 "Players:"
             ]

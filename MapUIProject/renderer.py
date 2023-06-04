@@ -44,12 +44,13 @@ def render_screen(surface, tiles, players, camera, placementMode = False, curren
     for i in range(lowestX, highestX + 1):
         for tile in tiles:
             if tile.loc[0] == i:
-                playersInLocation = []
-                for player in players:
-                    if player.loc == tile.id:
-                        playersInLocation.append(player)
-                for j in reversed(range(len(playersInLocation))):
-                    playersInLocation[j].render(surface, camera, tiles, j + 1)
+                if tile.visible:
+                    playersInLocation = []
+                    for player in players:
+                        if player.loc == tile.id:
+                            playersInLocation.append(player)
+                    for j in reversed(range(len(playersInLocation))):
+                        playersInLocation[j].render(surface, camera, tiles, j + 1)
     random.seed(100)
     if utils.weatherOn:
         for i in range(lowestX, highestX + 1):
@@ -163,6 +164,8 @@ def get_map_image_by_tile(mapName, tileId, size, player=False, tiles=[], Ps=[]):
 
     utils.setFonts()
 
+    flags = pygame.HIDDEN
+    pygame.display.set_mode((0, 0), flags, vsync=1)
     surface = pygame.Surface(size)
     surface.fill(utils.colors["background"])
 
@@ -189,7 +192,6 @@ def calculateWeather(tiles, camera, seed, scroll):
 
         noiseForPixel = noise([(x / 1000) + scroll, (y / 1000) + scroll])
         tile.setWeather(noiseForPixel)
-
     return tiles
 
 
@@ -198,7 +200,7 @@ def update_clouds(tiles, camera):
 
     random.seed(1)
     cloudNodePoints = []
-    for r, t in rtpairs(50):
+    for r, t in rtpairs(25):
         cloudNodePoints.append(((r * np.cos(t)) + (offset * (random.random() - 0.5)), (r * np.sin(t)) + (offset * (random.random() - 0.5))))
 
     newCloudPoints = []
