@@ -13,6 +13,7 @@ class Tile:
     color = None
     neighbours = []
     label = ""
+    description = ""
     comments = ""
     covered = False
     height = 0
@@ -24,13 +25,14 @@ class Tile:
     rain_threshold = 0.0
     cloud_threshold = 0.0
 
-    def __init__(self, location, type, unique_id=0, label="", comments=""):
+    def __init__(self, location, type, unique_id=0, label="", comments="", description=""):
         self.loc = location
         self.id = unique_id
         self.type = type
         self.biome = self.type.split("\\")[0]
         self.color = utils.colors[self.type.split("\\")[0]]
         self.label = label
+        self.description = description
         self.comments = comments
         self.covered = utils.metadata[type]["covered"]
         self.height = utils.metadata[type]["height"]

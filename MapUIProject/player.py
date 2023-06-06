@@ -6,11 +6,13 @@ class Player:
     loc = 0
     color = None
     name = ""
+    player = True
 
-    def __init__(self, name, location, color):
+    def __init__(self, name, location, color, player):
         self.name = name
         self.loc = location
         self.color = color
+        self.player = player
 
     def render(self, surface, camera, tiles, slot=1):
         tile = ""
@@ -33,7 +35,10 @@ class Player:
             slot -= layer
         slot += layer
 
-        image = pygame.image.load("..\\MapUIProject\\player_token.png")
+        if self.player:
+            image = pygame.image.load("..\\MapUIProject\\player_token.png")
+        else:
+            image = pygame.image.load("..\\MapUIProject\\npc_token.png")
         image = pygame.transform.scale(image, (image.get_width() * 0.05, image.get_height() * 0.05))
         image.fill(self.color, special_flags=pygame.BLEND_RGB_MULT)
         brighten = 20

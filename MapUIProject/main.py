@@ -412,13 +412,21 @@ while True:
                 "X: " + str(x) + ", Y:" + str(y),
                 "Type: " + str(currentFocusTile.type),
                 "Label: " + currentFocusTile.label,
+                "Description: " + currentFocusTile.description,
                 "Weather: " + currentFocusTile.weather,
                 "",
                 "Players:"
             ]
 
             for p in Ps:
-                if p.loc == currentFocusTile.id:
+                if p.loc == currentFocusTile.id and p.player:
+                    text.append(p.name)
+
+            text.append("")
+            text.append("NPCs: ")
+
+            for p in Ps:
+                if p.loc == currentFocusTile.id and not p.player:
                     text.append(p.name)
 
             text.append("")

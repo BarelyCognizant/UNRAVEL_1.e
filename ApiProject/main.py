@@ -23,10 +23,12 @@ async def create_map_object(mapName: str):
                 "location": (0, 0),
                 "type": "grass\\forest.png",
                 "label": "",
+                "description": "",
                 "comments": ""
             }
         },
-        "players": {}
+        "players": {},
+        "npcs": {}
     }
     with open("maps/" + mapName + ".json", "x") as outfile:
         json.dump(newMapData, outfile)
@@ -62,7 +64,7 @@ async def create_tile(mapName: str, x: int, y:int, type: str, id: int, hash: str
                     return {"message": "This tile already exists."}
             mapData["hash"] = str(uuid.uuid4())
             mapData["idCount"] += 1
-            mapData["tiles"][id] = {"location": [x, y], "type": type.replace("_", "\\"), "label": "", "comments": ""}
+            mapData["tiles"][id] = {"location": [x, y], "type": type.replace("_", "\\"), "label": "", "description": "", "comments": ""}
             os.remove("maps/" + mapName + ".json")
             with open("maps/" + mapName + ".json", "x") as outfile:
                 json.dump(mapData, outfile)
@@ -152,6 +154,44 @@ async def delete_label(mapName: str, id: str):
     return {"message": "Map does not exist."}
 
 
+@app.post("/map/{mapName}/description/{id}/{description}", status_code=201)
+async def write_description(mapName: str, id: str, description: str):
+    if os.path.isfile("maps/" + mapName + ".json"):
+        with open("maps/" + mapName + ".json") as mapJsonFile:
+            mapData = json.load(mapJsonFile)
+        if id in mapData["tiles"]:
+            for tile in mapData["tiles"]:
+                if tile == id:
+                    mapData["hash"] = str(uuid.uuid4())
+                    mapData["tiles"][tile]["description"] = description
+                    os.remove("maps/" + mapName + ".json")
+                    with open("maps/" + mapName + ".json", "x") as outfile:
+                        json.dump(mapData, outfile)
+                    return mapData
+        else:
+            return {"message": "Tile does not exist."}
+    return {"message": "Map does not exist."}
+
+
+@app.delete("/map/{mapName}/description/{id}", status_code=201)
+async def delete_description(mapName: str, id: str):
+    if os.path.isfile("maps/" + mapName + ".json"):
+        with open("maps/" + mapName + ".json") as mapJsonFile:
+            mapData = json.load(mapJsonFile)
+        if id in mapData["tiles"]:
+            for tile in mapData["tiles"]:
+                if tile == id:
+                    mapData["hash"] = str(uuid.uuid4())
+                    mapData["tiles"][tile]["description"] = ""
+                    os.remove("maps/" + mapName + ".json")
+                    with open("maps/" + mapName + ".json", "x") as outfile:
+                        json.dump(mapData, outfile)
+                    return mapData
+        else:
+            return {"message": "Tile does not exist."}
+    return {"message": "Map does not exist."}
+
+
 @app.post("/map/{mapName}/comments/{id}/{comments}", status_code=201)
 async def write_comments(mapName: str, id: str, comments: str):
     if os.path.isfile("maps/" + mapName + ".json"):
@@ -209,18 +249,21 @@ async def delete_comments(mapName: str, id: str):
     return {"message": "Map does not exist."}
 
 
-@app.post("/map/{mapName}/players/{name}/{id}/{color}", status_code=201)
-async def create_player(mapName: str, name: str, id: str, color: str):
+@app.post("/map/{mapName}/players/{name}/{id}/{r}/{g}/{b}/{npc}", status_code=201)
+async def create_player(mapName: str, name: str, id: str, r: int, g: int, b: int, npc: bool):
     if os.path.isfile("maps/" + mapName + ".json"):
         with open("maps/" + mapName + ".json") as mapJsonFile:
             mapData = json.load(mapJsonFile)
         if id in mapData["tiles"]:
             for tile in mapData["tiles"]:
                 if tile == id:
+                    listIndex = "players"
+                    if npc:
+                        listIndex = "npcs"
                     mapData["hash"] = str(uuid.uuid4())
-                    mapData["players"][name] = {
+                    mapData[listIndex][name] = {
                         "tileId": id,
-                        "color": color,
+                        "color": [r, g, b],
                         "rememberedTiles": {}
                     }
                     os.remove("maps/" + mapName + ".json")

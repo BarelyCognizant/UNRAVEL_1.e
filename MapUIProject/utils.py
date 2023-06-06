@@ -241,7 +241,8 @@ def updateData(mapData, camera=None):
     Ms = []
     for tile in mapData["tiles"]:
         toAppend = Tile(mapData["tiles"][tile]["location"], mapData["tiles"][tile]["type"], tile,
-                        mapData["tiles"][tile]["label"], mapData["tiles"][tile]["comments"])
+                        mapData["tiles"][tile]["label"], mapData["tiles"][tile]["comments"],
+                        mapData["tiles"][tile]["description"])
         neighbours = find_tiles(generate_neighbour_locs(mapData["tiles"][tile]["location"]), Ms)
         toAppend.neighbours = neighbours
         for n in neighbours:
@@ -249,7 +250,9 @@ def updateData(mapData, camera=None):
         Ms.append(toAppend)
     Ps = []
     for player in mapData["players"]:
-        Ps.append(Player(player, mapData["players"][player]["tileId"], mapData["players"][player]["color"]))
+        Ps.append(Player(player, mapData["players"][player]["tileId"], mapData["players"][player]["color"], True))
+    for npc in mapData["npcs"]:
+        Ps.append(Player(npc, mapData["npcs"][npc]["tileId"], mapData["npcs"][npc]["color"], False))
     if camera is not None:
         renderer.update_clouds(Ms, camera)
     return currentMapHash, Ms, Ps
