@@ -2,12 +2,15 @@ import pygame
 import glob
 import csv
 
+import renderer
 from tile import Tile
 from player import Player
 
 infoFont = ""
 controlFont = ""
 labelFont = ""
+cloudScale = 600
+weatherOn = True
 
 ipAddress = "192.168.1.22:8000"
 
@@ -27,15 +30,7 @@ colors = {
     "ocean": [(41, 108, 217), (78, 131, 217)],
     "snow": [(197, 206, 219), (255, 255, 255)],
     "settlement": [(84, 84, 84), (120, 120, 120)],
-    "background": (53, 54, 58),
-    "red": (255, 0, 0),
-    "orange": (255, 98, 0),
-    "yellow": (255, 255, 0),
-    "green": (0, 255, 0),
-    "lightblue": (0, 255, 255),
-    "blue": (0, 0, 255),
-    "purple": (119, 0, 255),
-    "pink": (255, 0, 255)
+    "background": (53, 54, 58)
 }
 
 tilePaths = glob.glob("..\\MapUIProject\\tiles\\used/*/*.png")
@@ -56,6 +51,20 @@ with open("..\\MapUIProject\\tiles\\used\\tile_metadata.txt", "r", encoding="utf
         covered = covered == "True"
         height = int(height)
         metadata[type] = {"covered": covered, "height": height}
+
+region_metadata = {}
+with open("..\\MapUIProject\\tiles\\used\\region_metadata.txt", "r", encoding="utf8") as metadata_file:
+    tsv_reader = csv.reader(metadata_file, delimiter="\t")
+    for row in tsv_reader:
+        (region, rain_threshold, cloud_threshold) = row
+        rain_threshold = float(rain_threshold)
+        cloud_threshold = float(cloud_threshold)
+        region_metadata[region] = {"rain_threshold": rain_threshold, "cloud_threshold": cloud_threshold}
+
+dryClouds = []
+for i in range(1, 4):
+    dryClouds.append("..\\MapUIProject\\clouds\\dry\\cloud" + str(i) + ".png")
+
 
 vertical = False
 
@@ -121,15 +130,69 @@ def drawCell(surface, camera, x, y, color):
     return rect
 
 
+def drawCloud(surface, camera, x, y, image):
+    x = (x * (camera["scale"] + cloudScale)) + camera["ox"]
+    y = (y * (camera["scale"] + cloudScale) * 0.866) + camera["oy"]
+    x, y = y, x
+    image = pygame.transform.scale(image, (image.get_width() * 1.8, image.get_height() * 1.8))
+    surface.blit(image, (x - (image.get_width() / 2), y - (image.get_height() / 2)))
+
+
+_circle_cache = {}
+
+
+def circlePoints(r):
+    r = int(round(r))
+    if r in _circle_cache:
+        return _circle_cache[r]
+    x, y, e = r, 0, 1 - r
+    _circle_cache[r] = points = []
+    while x >= y:
+        points.append((x, y))
+        y += 1
+        if e < 0:
+            e += 2 * y - 1
+        else:
+            x -= 1
+            e += 2 * (y - x) - 1
+    points += [(y, x) for x, y in points if x > y]
+    points += [(-x, y) for x, y in points if x]
+    points += [(x, -y) for x, y in points if y]
+    points.sort()
+    return points
+
+
 def drawLabel(surface, camera, x, y, label, color):
+    outlineColor = (200, 200, 200)
+    if color == (255, 255, 255):
+        outlineColor = (0, 0, 0)
+
     if (y % 2) == 0:
         x = x + 0.5
     x = (x * camera["scale"]) + camera["ox"]
     y = (y * camera["scale"] * 0.866) + camera["oy"]
     if not vertical:
         x, y = y, x
-    w = labelFont.size(label)[0]
-    addText(surface, label, x - (w / 2), y + 20, labelFont, color)
+    width = labelFont.size(label)[0]
+
+    opx = 2
+    textSurface = labelFont.render(label, True, color).convert_alpha()
+    w = textSurface.get_width() + 2 * opx
+    h = labelFont.get_height()
+
+    osurf = pygame.Surface((w, h + 2 * opx)).convert_alpha()
+    osurf.fill((0, 0, 0, 0))
+
+    surf = osurf.copy()
+
+    osurf.blit(labelFont.render(label, True, outlineColor).convert_alpha(), (0, 0))
+
+    for dx, dy in circlePoints(opx):
+        surf.blit(osurf, (dx + opx, dy + opx))
+
+    surf.blit(textSurface, (opx, opx))
+
+    surface.blit(surf, (x - (width / 2), y + 20))
 
 
 def screenToCameraTransform(p, camera):
@@ -173,12 +236,13 @@ def find_tiles(locs, bs):
     return ret
 
 
-def updateData(mapData):
+def updateData(mapData, camera=None):
     currentMapHash = mapData["hash"]
     Ms = []
     for tile in mapData["tiles"]:
         toAppend = Tile(mapData["tiles"][tile]["location"], mapData["tiles"][tile]["type"], tile,
-                        mapData["tiles"][tile]["label"], mapData["tiles"][tile]["comments"])
+                        mapData["tiles"][tile]["label"], mapData["tiles"][tile]["comments"],
+                        mapData["tiles"][tile]["description"])
         neighbours = find_tiles(generate_neighbour_locs(mapData["tiles"][tile]["location"]), Ms)
         toAppend.neighbours = neighbours
         for n in neighbours:
@@ -186,7 +250,11 @@ def updateData(mapData):
         Ms.append(toAppend)
     Ps = []
     for player in mapData["players"]:
-        Ps.append(Player(player, mapData["players"][player]["tileId"], mapData["players"][player]["color"]))
+        Ps.append(Player(player, mapData["players"][player]["tileId"], mapData["players"][player]["color"], True))
+    for npc in mapData["npcs"]:
+        Ps.append(Player(npc, mapData["npcs"][npc]["tileId"], mapData["npcs"][npc]["color"], False))
+    if camera is not None:
+        renderer.update_clouds(Ms, camera)
     return currentMapHash, Ms, Ps
 
 

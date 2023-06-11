@@ -20,6 +20,7 @@ iterations = 0
 user32 = ctypes.windll.user32
 screensize = user32.GetSystemMetrics(0), (user32.GetSystemMetrics(1) - 80)
 
+weatherScroll = 0
 
 def distanceBetweenTwoPoints(A, B):
     return math.hypot(A[0] - B[0], A[1] - B[1])
@@ -107,9 +108,11 @@ currentFocusTile = None
 
 mapData = ast.literal_eval(requests.get("http://" + utils.ipAddress + "/map/" + sys.argv[1]).text)
 
-currentMapHash, Ms, Ps = utils.updateData(mapData)
+currentMapHash, Ms, Ps = utils.updateData(mapData, camera)
 
 center(Ms, camera)
+
+renderer.update_clouds(Ms, camera)
 
 while True:
     leftClick = False
@@ -171,10 +174,12 @@ while True:
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_p:
                 placementMode = not placementMode
+            if event.key == pygame.K_w:
+                utils.weatherOn = not utils.weatherOn
         elif event.type == CHECKHASHEVENT:
             mapData = ast.literal_eval(requests.get("http://" + utils.ipAddress + "/map/" + sys.argv[1]).text)
             if currentMapHash != mapData["hash"]:
-                currentMapHash, Ms, Ps = utils.updateData(mapData)
+                currentMapHash, Ms, Ps = utils.updateData(mapData, camera)
 
     DISPLAY_SURF.fill(utils.colors["background"])
     BsBoxes = []
@@ -298,7 +303,7 @@ while True:
                 else:
                     if "message" in mapData:
                         mapData = ast.literal_eval(requests.get("http://" + utils.ipAddress + "/map/" + sys.argv[1]).text)
-                        currentMapHash, Ms, Ps = utils.updateData(mapData)
+                        currentMapHash, Ms, Ps = utils.updateData(mapData, camera)
                         mapData = ast.literal_eval(requests.post("http://" + utils.ipAddress +
                                                                  "/map/" + sys.argv[1] +
                                                                  "/tile/" + str(toAppend.loc[0]) +
@@ -315,6 +320,7 @@ while True:
                             if n is not None:
                                 n.add_neighbour(toAppend)
                         Ms.append(toAppend)
+                renderer.update_clouds(Ms, camera)
             elif rightClick and not edge:
                 empty = True
                 for p in Ps:
@@ -332,13 +338,14 @@ while True:
                         if "message" in mapData:
                             mapData = ast.literal_eval(requests.get("http://" + utils.ipAddress + "/map/" + sys.argv[1]).text)
 
-                            currentMapHash, Ms, Ps = utils.updateData(mapData)
+                            currentMapHash, Ms, Ps = utils.updateData(mapData, camera)
                             mapData = ast.literal_eval(requests.delete("http://" + utils.ipAddress +
                                                              "/map/" + sys.argv[1] +
                                                              "/tile/" + str(hoverPoint.id) +
                                                              "/" + currentMapHash).text)
                         if "message" not in mapData:
-                            currentMapHash, Ms, Ps = utils.updateData(mapData)
+                            currentMapHash, Ms, Ps = utils.updateData(mapData, camera)
+                renderer.update_clouds(Ms, camera)
             elif leftClick and not edge:
                 newType = utils.tiles[currentSelectionIndex]
                 mapData = ast.literal_eval(requests.put("http://" + utils.ipAddress +
@@ -352,7 +359,7 @@ while True:
                     if "message" in mapData:
                         mapData = ast.literal_eval(requests.get("http://" + utils.ipAddress + "/map/" + sys.argv[1]).text)
 
-                        currentMapHash, Ms, Ps = utils.updateData(mapData)
+                        currentMapHash, Ms, Ps = utils.updateData(mapData, camera)
                         mapData = ast.literal_eval(requests.put("http://" + utils.ipAddress +
                                                                 "/map/" + sys.argv[1] +
                                                                 "/tile/" + newType +
@@ -360,7 +367,7 @@ while True:
                                                                 "/" + currentMapHash).text)
 
                     if "message" not in mapData:
-                        currentMapHash, Ms, Ps = utils.updateData(mapData)
+                        currentMapHash, Ms, Ps = utils.updateData(mapData, camera)
     else:
 
         if leftClick:
@@ -391,7 +398,8 @@ while True:
         centerId = mapData["players"][characterPerspective]["tileId"]
         renderer.render_perspective(DISPLAY_SURF, Ms, Ps, camera, centerId)
     else:
-        renderer.render_full_screen(DISPLAY_SURF, Ms, Ps, camera, placementMode, currentFocusTile)
+        renderer.render_full_screen(DISPLAY_SURF, Ms, Ps, camera, placementMode, currentFocusTile, mapData["weather"]["seed"], weatherScroll)
+        weatherScroll += 0.002
 
     if not placementMode:
         if currentFocusTile is not None:
@@ -404,12 +412,21 @@ while True:
                 "X: " + str(x) + ", Y:" + str(y),
                 "Type: " + str(currentFocusTile.type),
                 "Label: " + currentFocusTile.label,
+                "Description: " + currentFocusTile.description,
+                "Weather: " + currentFocusTile.weather,
                 "",
                 "Players:"
             ]
 
             for p in Ps:
-                if p.loc == currentFocusTile.id:
+                if p.loc == currentFocusTile.id and p.player:
+                    text.append(p.name)
+
+            text.append("")
+            text.append("NPCs: ")
+
+            for p in Ps:
+                if p.loc == currentFocusTile.id and not p.player:
                     text.append(p.name)
 
             text.append("")

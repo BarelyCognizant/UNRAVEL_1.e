@@ -1,0 +1,5 @@
+desert	-1.0	-0.4
+grass	-0.2	-0.05
+ocean	-1.0	-0.3
+settlement	-0.2	-0.05
+snow	-0.2	-0.05
